@@ -30,7 +30,7 @@ function findApps() {
 export default defineConfig({
   plugins: [react()],
   build: {
-    outDir: 'build',
+    outDir: 'ui-dist',
     cssCodeSplit: false,
     rollupOptions: {
       input: findApps(),
