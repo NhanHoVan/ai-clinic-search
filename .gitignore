@@ -1,0 +1,12 @@
+# =========================
+# Node / React build files
+# =========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+
+react-service/node_modules/
+react-service/.cache/

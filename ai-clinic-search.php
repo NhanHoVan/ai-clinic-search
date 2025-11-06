@@ -32,7 +32,7 @@ function ai_react_get_apps_config()
  */
 function ai_react_get_hashed_file($pattern)
 {
-    $build_dir = plugin_dir_path(__FILE__) . 'react-app/build/';
+    $build_dir = plugin_dir_path(__FILE__) . 'react-service/ui-dist/';
     $files = glob($build_dir . $pattern);
     if (!empty($files)) {
         return str_replace($build_dir, '', $files[0]);
@@ -86,7 +86,7 @@ function ai_react_get_active_apps()
  */
 function ai_react_add_module_type($tag, $handle, $src)
 {
-    if (strpos($src, 'ai-clinic-search/react-app/build/') !== false) {
+    if (strpos($src, 'ai-clinic-search/react-service/ui-dist/') !== false) {
         $tag = str_replace('type=\'text/javascript\'', 'type="module"', $tag);
         $tag = str_replace("type='text/javascript'", 'type="module"', $tag);
         $tag = str_replace('type="text/javascript"', 'type="module"', $tag);
@@ -103,7 +103,7 @@ add_filter('script_loader_tag', 'ai_react_add_module_type', 10, 3);
  */
 function ai_react_enqueue_vendors()
 {
-    $plugin_url = plugin_dir_url(__FILE__) . 'react-app/build/';
+    $plugin_url = plugin_dir_url(__FILE__) . 'react-service/ui-dist/';
 
     $css_file = ai_react_get_hashed_file('shared/assets/style-*.css');
     $vendor_react = ai_react_get_hashed_file('shared/chunks/vendor-react-*.js');
@@ -144,14 +144,14 @@ function ai_react_enqueue_vendors()
  */
 function ai_react_enqueue_app($app_key, $app_config)
 {
-    $plugin_url = plugin_dir_url(__FILE__) . 'react-app/build/';
+    $plugin_url = plugin_dir_url(__FILE__) . 'react-service/ui-dist/';
     $app_js_path = $app_config['app_path'];
 
-    if (!file_exists(plugin_dir_path(__FILE__) . 'react-app/build/' . $app_js_path)) {
+    if (!file_exists(plugin_dir_path(__FILE__) . 'react-service/ui-dist/' . $app_js_path)) {
         return;
     }
 
-    $handle = 'ai-react-app-' . $app_key;
+    $handle = 'ai-react-service-' . $app_key;
 
     wp_enqueue_script(
         $handle,
