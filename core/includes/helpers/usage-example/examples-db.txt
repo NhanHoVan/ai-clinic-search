@@ -1,0 +1,441 @@
+/**
+ * ============================================================================
+ * USAGE EXAMPLES - CLINICS
+ * ============================================================================
+ */
+
+// ========== CREATE A NEW CLINIC ==========
+$clinic_id = $this->aiclinic_insert_clinic([
+    'name'          => 'Phòng khám Đa khoa Bình Thạnh',
+    'address'       => '123 Điện Biên Phủ, Phường 15',
+    'province'      => 'Hồ Chí Minh',
+    'district'      => 'Bình Thạnh',
+    'lat'           => 10.8040,
+    'lng'           => 106.7154,
+    'phone'         => '028 1234 5678',
+    'email'         => 'contact@clinic.com',
+    'description'   => 'Chuyên khoa Nội, Ngoại, Nhi',
+    'verify_status' => 'AI_DETECTED',
+    'is_active'     => 'ACTIVE'
+]);
+
+if ($clinic_id) {
+    echo "Clinic created with ID: $clinic_id";
+}
+
+// ========== GET CLINICS WITH PAGINATION ==========
+// Simple list
+$clinics = $this->aiclinic_get_clinics([
+    'limit'  => 20,
+    'offset' => 0
+]);
+
+// With search
+$clinics = $this->aiclinic_get_clinics([
+    'search'        => 'Bình Thạnh',
+    'column_search' => 'name',
+    'limit'         => 20,
+    'offset'        => 0
+]);
+
+// With filters
+$clinics = $this->aiclinic_get_clinics([
+    'province'      => 'Hồ Chí Minh',
+    'district'      => 'Bình Thạnh',
+    'verify_status' => 'ADMIN_VERIFIED',
+    'is_active'     => 'ACTIVE',
+    'limit'         => 20,
+    'offset'        => 0,
+    'order_by'      => 'name',
+    'sort_direction'=> 'ASC'
+]);
+
+// ========== GET PAGINATED DATA (For DataTables) ==========
+$result = $this->aiclinic_get_clinics_paginated([
+    'search'         => $_POST['search']['value'] ?? '',
+    'column_search'  => 'name',
+    'province'       => $_POST['province'] ?? '',
+    'limit'          => $_POST['length'] ?? 10,
+    'offset'         => $_POST['start'] ?? 0,
+    'order_by'       => 'created_at',
+    'sort_direction' => 'DESC'
+]);
+
+// DataTables response format
+$response = [
+    'draw'            => intval($_POST['draw'] ?? 1),
+    'recordsTotal'    => $result['total'],
+    'recordsFiltered' => $result['filtered'],
+    'data'            => $result['data']
+];
+wp_send_json($response);
+
+// ========== GET SINGLE CLINIC ==========
+$clinic = $this->aiclinic_get_clinic_by_id(123);
+if ($clinic) {
+    echo "Clinic name: " . $clinic['name'];
+}
+
+// ========== UPDATE CLINIC ==========
+$updated = $this->aiclinic_update_clinic(123, [
+    'name'          => 'Phòng khám Đa khoa Bình Thạnh (Updated)',
+    'phone'         => '028 9999 8888',
+    'verify_status' => 'ADMIN_VERIFIED'
+]);
+
+if ($updated) {
+    echo "Clinic updated successfully";
+}
+
+// ========== DELETE CLINIC ==========
+$deleted = $this->aiclinic_delete_clinic(123);
+if ($deleted) {
+    echo "Clinic deleted";
+}
+
+// ========== BULK DELETE ==========
+$deleted_count = $this->aiclinic_bulk_delete_clinics([123, 456, 789]);
+echo "Deleted $deleted_count clinics";
+
+// ========== COUNT CLINICS ==========
+$total = $this->aiclinic_count_clinics();
+$active = $this->aiclinic_count_clinics(['is_active' => 'ACTIVE']);
+$in_hcm = $this->aiclinic_count_clinics(['province' => 'Hồ Chí Minh']);
+
+// ========== GET CLINICS BY PROVINCE ==========
+$clinics = $this->aiclinic_get_clinics_by_province('Hồ Chí Minh', 50);
+
+// ========== GET NEARBY CLINICS (Geolocation) ==========
+$nearby = $this->aiclinic_get_nearby_clinics(
+    10.8040,  // latitude
+    106.7154, // longitude
+    5,        // radius in km
+    10        // limit
+);
+
+foreach ($nearby as $clinic) {
+    echo "{$clinic['name']} - {$clinic['distance']} km away<br>";
+}
+
+/**
+ * ============================================================================
+ * USAGE EXAMPLES - REVIEWS
+ * ============================================================================
+ */
+
+// ========== CREATE A REVIEW ==========
+$review_id = $this->aiclinic_insert_review([
+    'clinic_id'     => 123,
+    'reviewer_name' => 'Nguyễn Văn A',
+    'rating'        => 5,
+    'comment'       => 'Phòng khám rất tốt, bác sĩ tận tâm'
+]);
+
+// ========== GET REVIEWS FOR A CLINIC ==========
+$reviews = $this->aiclinic_get_reviews_by_clinic(123, [
+    'limit'  => 10,
+    'offset' => 0
+]);
+
+// Paginated
+$result = $this->aiclinic_get_reviews_paginated(123, [
+    'limit'  => 10,
+    'offset' => 0
+]);
+
+// ========== GET SINGLE REVIEW ==========
+$review = $this->aiclinic_get_review_by_id(456);
+
+// ========== UPDATE REVIEW ==========
+$this->aiclinic_update_review(456, [
+    'rating'  => 4,
+    'comment' => 'Updated review text'
+]);
+
+// ========== DELETE REVIEW ==========
+$this->aiclinic_delete_review(456);
+
+// ========== GET CLINIC STATISTICS ==========
+$avg_rating = $this->aiclinic_get_clinic_average_rating(123);
+$review_count = $this->aiclinic_get_clinic_review_count(123);
+
+echo "Average rating: $avg_rating stars ($review_count reviews)";
+
+/**
+ * ============================================================================
+ * USAGE EXAMPLES - TAGS
+ * ============================================================================
+ */
+
+// ========== CREATE A TAG ==========
+$tag_id = $this->aiclinic_insert_tag('Chỉnh hình');
+
+// ========== GET ALL TAGS ==========
+$tags = $this->aiclinic_get_tags([
+    'limit'          => 100,
+    'order_by'       => 'name',
+    'sort_direction' => 'ASC'
+]);
+
+// With search
+$tags = $this->aiclinic_get_tags([
+    'search'        => 'Ngoại',
+    'column_search' => 'name'
+]);
+
+// ========== GET SINGLE TAG ==========
+$tag = $this->aiclinic_get_tag_by_id(10);
+$tag = $this->aiclinic_get_tag_by_name('Chỉnh hình');
+
+// ========== UPDATE TAG ==========
+$this->aiclinic_update_tag(10, 'Chỉnh hình khớp');
+
+// ========== DELETE TAG ==========
+$this->aiclinic_delete_tag(10);
+
+// ========== GET OR CREATE TAG ==========
+$tag_id = $this->aiclinic_get_or_create_tag('Tim mạch');
+
+/**
+ * ============================================================================
+ * USAGE EXAMPLES - TAG RELATIONS (Many-to-Many)
+ * ============================================================================
+ */
+
+// ========== ASSIGN TAG TO CLINIC ==========
+$this->aiclinic_assign_tag_to_clinic(123, 10);
+
+// ========== REMOVE TAG FROM CLINIC ==========
+$this->aiclinic_remove_tag_from_clinic(123, 10);
+
+// ========== GET ALL TAGS FOR A CLINIC ==========
+$tags = $this->aiclinic_get_tags_by_clinic(123);
+foreach ($tags as $tag) {
+    echo $tag['name'] . ', ';
+}
+
+// ========== GET ALL CLINICS WITH A SPECIFIC TAG ==========
+$clinics = $this->aiclinic_get_clinics_by_tag(10, [
+    'limit'  => 20,
+    'offset' => 0
+]);
+
+// ========== SYNC TAGS (Replace all tags) ==========
+// By tag IDs
+$this->aiclinic_sync_clinic_tags(123, [10, 11, 12]);
+
+// By tag names (auto-creates tags if they don't exist)
+$this->aiclinic_sync_clinic_tags_by_name(123, [
+    'Chỉnh hình',
+    'Tim mạch',
+    'Nội khoa',
+    'Nhi khoa'
+]);
+
+/**
+ * ============================================================================
+ * COMPLETE WORKFLOW EXAMPLE
+ * ============================================================================
+ */
+
+// Create a clinic with tags and reviews in one workflow
+function create_complete_clinic_example() {
+    // 1. Create clinic
+    $clinic_id = $this->aiclinic_insert_clinic([
+        'name'          => 'Phòng khám Đa khoa Quận 1',
+        'address'       => '456 Nguyễn Huệ, Phường Bến Nghé',
+        'province'      => 'Hồ Chí Minh',
+        'district'      => 'Quận 1',
+        'lat'           => 10.7740,
+        'lng'           => 106.7006,
+        'phone'         => '028 3829 9999',
+        'email'         => 'info@clinic-q1.vn',
+        'description'   => 'Phòng khám uy tín tại trung tâm Sài Gòn',
+        'verify_status' => 'ADMIN_VERIFIED',
+        'is_active'     => 'ACTIVE'
+    ]);
+
+    if (!$clinic_id) {
+        return ['success' => false, 'message' => 'Failed to create clinic'];
+    }
+
+    // 2. Add tags
+    $this->aiclinic_sync_clinic_tags_by_name($clinic_id, [
+        'Nội khoa',
+        'Ngoại khoa',
+        'Nhi khoa',
+        'Da liễu',
+        'Răng hàm mặt'
+    ]);
+
+    // 3. Add initial review
+    $this->aiclinic_insert_review([
+        'clinic_id'     => $clinic_id,
+        'reviewer_name' => 'Admin',
+        'rating'        => 5,
+        'comment'       => 'Phòng khám chất lượng cao'
+    ]);
+
+    return [
+        'success'   => true,
+        'clinic_id' => $clinic_id,
+        'message'   => 'Clinic created successfully with tags and review'
+    ];
+}
+
+/**
+ * ============================================================================
+ * AJAX HANDLER EXAMPLES
+ * ============================================================================
+ */
+
+// DataTables AJAX handler for clinics
+function ajax_get_clinics() {
+    check_ajax_referer('clinic_nonce', 'nonce');
+
+    $result = $this->aiclinic_get_clinics_paginated([
+        'search'         => sanitize_text_field($_POST['search']['value'] ?? ''),
+        'province'       => sanitize_text_field($_POST['province'] ?? ''),
+        'district'       => sanitize_text_field($_POST['district'] ?? ''),
+        'verify_status'  => sanitize_text_field($_POST['verify_status'] ?? ''),
+        'is_active'      => sanitize_text_field($_POST['is_active'] ?? ''),
+        'limit'          => absint($_POST['length'] ?? 10),
+        'offset'         => absint($_POST['start'] ?? 0),
+        'order_by'       => 'created_at',
+        'sort_direction' => 'DESC'
+    ]);
+
+    wp_send_json([
+        'draw'            => intval($_POST['draw'] ?? 1),
+        'recordsTotal'    => $result['total'],
+        'recordsFiltered' => $result['filtered'],
+        'data'            => $result['data']
+    ]);
+}
+
+// AJAX handler for getting clinic details with related data
+function ajax_get_clinic_details() {
+    check_ajax_referer('clinic_nonce', 'nonce');
+
+    $clinic_id = absint($_POST['clinic_id'] ?? 0);
+    
+    $clinic = $this->aiclinic_get_clinic_by_id($clinic_id);
+    if (!$clinic) {
+        wp_send_json_error(['message' => 'Clinic not found']);
+    }
+
+    // Get tags
+    $clinic['tags'] = $this->aiclinic_get_tags_by_clinic($clinic_id);
+
+    // Get reviews
+    $reviews = $this->aiclinic_get_reviews_by_clinic($clinic_id, ['limit' => 5]);
+    $clinic['recent_reviews'] = $reviews;
+
+    // Get statistics
+    $clinic['avg_rating'] = $this->aiclinic_get_clinic_average_rating($clinic_id);
+    $clinic['review_count'] = $this->aiclinic_get_clinic_review_count($clinic_id);
+
+    wp_send_json_success($clinic);
+}
+
+// AJAX handler for bulk operations
+function ajax_bulk_delete_clinics() {
+    check_ajax_referer('clinic_nonce', 'nonce');
+
+    if (!current_user_can('manage_options')) {
+        wp_send_json_error(['message' => 'Permission denied']);
+    }
+
+    $clinic_ids = array_map('absint', $_POST['clinic_ids'] ?? []);
+    
+    if (empty($clinic_ids)) {
+        wp_send_json_error(['message' => 'No clinics selected']);
+    }
+
+    $deleted = $this->aiclinic_bulk_delete_clinics($clinic_ids);
+
+    wp_send_json_success([
+        'message' => "Deleted $deleted clinics",
+        'deleted' => $deleted
+    ]);
+}
+
+/**
+ * ============================================================================
+ * SEARCH & FILTER EXAMPLES
+ * ============================================================================
+ */
+
+// Advanced search with multiple filters
+function advanced_clinic_search($params) {
+    $args = [
+        'search'         => $params['keyword'] ?? '',
+        'column_search'  => 'name',
+        'limit'          => $params['per_page'] ?? 20,
+        'offset'         => ($params['page'] ?? 0) * ($params['per_page'] ?? 20),
+        'order_by'       => $params['order_by'] ?? 'created_at',
+        'sort_direction' => $params['sort'] ?? 'DESC'
+    ];
+
+    // Add filters
+    if (!empty($params['province'])) {
+        $args['province'] = $params['province'];
+    }
+
+    if (!empty($params['district'])) {
+        $args['district'] = $params['district'];
+    }
+
+    if (!empty($params['verify_status'])) {
+        $args['verify_status'] = $params['verify_status'];
+    }
+
+    if (!empty($params['is_active'])) {
+        $args['is_active'] = $params['is_active'];
+    }
+
+    return $this->aiclinic_get_clinics_paginated($args);
+}
+
+// Search clinics by tag
+function search_clinics_by_tags($tag_names, $limit = 20) {
+    // Get tag IDs
+    $tag_ids = [];
+    foreach ($tag_names as $name) {
+        $tag = $this->aiclinic_get_tag_by_name($name);
+        if ($tag) {
+            $tag_ids[] = $tag['id'];
+        }
+    }
+
+    if (empty($tag_ids)) {
+        return [];
+    }
+
+    // Get clinics for first tag
+    $clinics = $this->aiclinic_get_clinics_by_tag($tag_ids[0], ['limit' => $limit]);
+
+    // If multiple tags, filter clinics that have all tags
+    if (count($tag_ids) > 1) {
+        $filtered = [];
+        foreach ($clinics as $clinic) {
+            $clinic_tags = $this->aiclinic_get_tags_by_clinic($clinic['id']);
+            $clinic_tag_ids = array_column($clinic_tags, 'id');
+            
+            $has_all_tags = true;
+            foreach ($tag_ids as $tag_id) {
+                if (!in_array($tag_id, $clinic_tag_ids)) {
+                    $has_all_tags = false;
+                    break;
+                }
+            }
+            
+            if ($has_all_tags) {
+                $filtered[] = $clinic;
+            }
+        }
+        return $filtered;
+    }
+
+    return $clinics;
+}
