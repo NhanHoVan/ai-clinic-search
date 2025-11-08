@@ -17,23 +17,23 @@ class Ai_Clinic_REST_Register
 {
     public function __construct()
     {
-        add_action('rest_api_init', [$this, 'register_routes']);
+        add_action('rest_api_init', [$this, 'aiclinic_register_routes']);
     }
 
-    public function register_routes()
+    public function aiclinic_register_routes()
     {
         $clinic_controller = new AI_Clinic_Controller_Clinic();
 
-        register_rest_route('ai-clinic/v1', '/clinics', [
+        register_rest_route('ai-clinic-search/v1', '/clinics', [
             'methods' => 'GET',
             'callback' => [$clinic_controller, 'get_clinics'],
-            'permission_callback' => [Ai_Clinic_Permissions::class, 'public_access'],
+            'permission_callback' => [Ai_Clinic_Permissions::class, 'aiclinic_public_access'],
         ]);
 
-        register_rest_route('ai-clinic/v1', '/clinics', [
+        register_rest_route('ai-clinic-search/v1', '/clinics', [
             'methods' => 'POST',
             'callback' => [$clinic_controller, 'create_clinic'],
-            'permission_callback' => [Ai_Clinic_Permissions::class, 'can_edit_posts'],
+            'permission_callback' => [Ai_Clinic_Permissions::class, 'aiclinic_can_edit_posts'],
         ]);
     }
 }

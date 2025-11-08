@@ -18,7 +18,7 @@ class Ai_Clinic_Permissions
     /**
      * Allow public access (no restriction)
      */
-    public static function public_access()
+    public static function aiclinic_public_access()
     {
         return true;
     }
@@ -26,7 +26,7 @@ class Ai_Clinic_Permissions
     /**
      * Allow logged-in users
      */
-    public static function logged_in_only()
+    public static function aiclinic_logged_in_only()
     {
         return is_user_logged_in();
     }
@@ -34,7 +34,7 @@ class Ai_Clinic_Permissions
     /**
      * Allow users who can edit posts
      */
-    public static function can_edit_posts()
+    public static function aiclinic_can_edit_posts()
     {
         return current_user_can('edit_posts');
     }
@@ -42,7 +42,7 @@ class Ai_Clinic_Permissions
     /**
      * Allow admins only
      */
-    public static function admin_only()
+    public static function aiclinic_admin_only()
     {
         return current_user_can('manage_options');
     }
