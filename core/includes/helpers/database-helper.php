@@ -616,4 +616,22 @@ class Database_Helper
 
         return $count > 0;
     }
+
+    /**
+     * Truncate a table (delete all records and reset AUTO_INCREMENT).
+     *
+     * @param string $table_name Table name without prefix.
+     * @return bool True on success, false on failure.
+     */
+    public function aiclinic_truncate_table($table_name): bool
+    {
+        if (!$this->validate_table_name($table_name)) {
+            return false;
+        }
+
+        $full_table_name = $this->wpdb->prefix . $table_name;
+        $sql = "TRUNCATE TABLE `$full_table_name`";
+
+        return $this->wpdb->query($sql) !== false;
+    }
 }

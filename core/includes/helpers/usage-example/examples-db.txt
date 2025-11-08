@@ -438,4 +438,599 @@ function search_clinics_by_tags($tag_names, $limit = 20) {
     }
 
     return $clinics;
+
+    /**
+    * ============================================================================
+    * USAGE EXAMPLES - PLUGIN SETTINGS
+    * ============================================================================
+    */
+
+    // ========== SET SINGLE SETTING ==========
+    $this->aiclinic_set_setting('ai_model', 'gpt-4');
+    $this->aiclinic_set_setting('ai_temperature', '0.7');
+    $this->aiclinic_set_setting('max_tokens', 2000);
+
+    // Store array as JSON
+    $this->aiclinic_set_setting('email_notifications', [
+        'enabled' => true,
+        'recipients' => ['admin@example.com', 'manager@example.com']
+    ]);
+
+    // ========== GET SINGLE SETTING ==========
+    $model = $this->aiclinic_get_setting('ai_model', 'gpt-3.5-turbo');
+    echo "AI Model: $model";
+
+    // Get and decode JSON
+    $notifications = $this->aiclinic_get_setting('email_notifications', [], true);
+    if ($notifications['enabled']) {
+        echo "Notifications enabled";
+    }
+
+    // ========== GET MULTIPLE SETTINGS ==========
+    $ai_settings = $this->aiclinic_get_settings([
+        'ai_model',
+        'ai_temperature',
+        'max_tokens',
+        'ai_api_key'
+    ]);
+
+    // Returns: [
+    //   'ai_model' => 'gpt-4',
+    //   'ai_temperature' => '0.7',
+    //   'max_tokens' => '2000',
+    //   'ai_api_key' => 'sk-...'
+    // ]
+
+    // ========== GET ALL SETTINGS ==========
+    $all_settings = $this->aiclinic_get_all_settings([
+        'limit' => 100,
+        'order_by' => 'option_name'
+    ]);
+
+    // ========== GET SETTINGS WITH PAGINATION (For Admin Page) ==========
+    $result = $this->aiclinic_get_settings_paginated([
+        'search' => $_POST['search']['value'] ?? '',
+        'limit'  => $_POST['length'] ?? 20,
+        'offset' => $_POST['start'] ?? 0
+    ]);
+
+    // DataTables response
+    wp_send_json([
+        'draw'            => intval($_POST['draw'] ?? 1),
+        'recordsTotal'    => $result['total'],
+        'recordsFiltered' => $result['filtered'],
+        'data'            => $result['data']
+    ]);
+
+    // ========== CHECK IF SETTING EXISTS ==========
+    if ($this->aiclinic_setting_exists('ai_api_key')) {
+        echo "API key is configured";
+    }
+
+    // ========== DELETE SETTING ==========
+    $this->aiclinic_delete_setting('old_setting');
+
+    // ========== BULK UPDATE SETTINGS ==========
+    $success = $this->aiclinic_bulk_update_settings([
+        'ai_model'       => 'gpt-4-turbo',
+        'ai_temperature' => '0.8',
+        'max_tokens'     => 4000,
+        'ai_provider'    => 'openai'
+    ]);
+
+    if ($success) {
+        echo "All settings updated successfully";
+    }
+
+    // ========== BULK DELETE SETTINGS ==========
+    $deleted = $this->aiclinic_bulk_delete_settings([
+        'old_setting_1',
+        'old_setting_2',
+        'deprecated_option'
+    ]);
+    echo "Deleted $deleted settings";
+
+    // ========== GET SETTINGS BY PREFIX ==========
+    // Get all AI-related settings
+    $ai_settings = $this->aiclinic_get_settings_by_prefix('ai_');
+
+    // Get all email-related settings
+    $email_settings = $this->aiclinic_get_settings_by_prefix('email_');
+
+    // ========== TYPICAL SETTINGS WORKFLOW ==========
+    function save_plugin_configuration($data) {
+        // Validate and sanitize
+        $settings = [
+            'ai_model'       => sanitize_text_field($data['model']),
+            'ai_api_key'     => sanitize_text_field($data['api_key']),
+            'ai_temperature' => floatval($data['temperature']),
+            'max_tokens'     => absint($data['max_tokens']),
+            'enable_logs'    => (bool) ($data['enable_logs'] ?? false)
+        ];
+
+        // Encrypt sensitive data if needed
+        if (!empty($settings['ai_api_key'])) {
+            $settings['ai_api_key'] = $this->encrypt($settings['ai_api_key']);
+        }
+
+        // Bulk update
+        return $this->aiclinic_bulk_update_settings($settings);
+    }
+
+    /**
+    * ============================================================================
+    * USAGE EXAMPLES - CUSTOMERS
+    * ============================================================================
+    */
+
+    // ========== CREATE A NEW CUSTOMER ==========
+    $customer_id = $this->aiclinic_insert_customer([
+        'user_id'         => get_current_user_id(),
+        'customer_key'    => $this->aiclinic_generate_customer_key(),
+        'customer_name'   => 'Nguyễn Văn A',
+        'pricing_plan'    => 'BASIC',
+        'domain'          => 'example.com',
+        'customer_status' => 'ACTIVE'
+    ]);
+
+    if ($customer_id) {
+        echo "Customer created with ID: $customer_id";
+    }
+
+    // ========== GET CUSTOMERS WITH PAGINATION ==========
+    // Simple list
+    $customers = $this->aiclinic_get_customers([
+        'limit'  => 20,
+        'offset' => 0
+    ]);
+
+    // With search
+    $customers = $this->aiclinic_get_customers([
+        'search'        => 'Nguyen',
+        'column_search' => 'customer_name',
+        'limit'         => 20,
+        'offset'        => 0
+    ]);
+
+    // With filters
+    $customers = $this->aiclinic_get_customers([
+        'pricing_plan'    => 'GOLD',
+        'customer_status' => 'ACTIVE',
+        'limit'           => 20,
+        'offset'          => 0,
+        'order_by'        => 'register_date',
+        'sort_direction'  => 'DESC'
+    ]);
+
+    // ========== GET PAGINATED DATA (For DataTables) ==========
+    $result = $this->aiclinic_get_customers_paginated([
+        'search'          => $_POST['search']['value'] ?? '',
+        'column_search'   => 'customer_name',
+        'pricing_plan'    => $_POST['pricing_plan'] ?? '',
+        'customer_status' => $_POST['customer_status'] ?? '',
+        'limit'           => $_POST['length'] ?? 10,
+        'offset'          => $_POST['start'] ?? 0
+    ]);
+
+    wp_send_json([
+        'draw'            => intval($_POST['draw'] ?? 1),
+        'recordsTotal'    => $result['total'],
+        'recordsFiltered' => $result['filtered'],
+        'data'            => $result['data']
+    ]);
+
+    // ========== GET SINGLE CUSTOMER ==========
+    // By ID
+    $customer = $this->aiclinic_get_customer_by_id(123);
+
+    // By WordPress User ID
+    $customer = $this->aiclinic_get_customer_by_user_id(get_current_user_id());
+
+    // By Customer Key
+    $customer = $this->aiclinic_get_customer_by_key('CUST_ABC123');
+
+    // By Domain
+    $customer = $this->aiclinic_get_customer_by_domain('example.com');
+
+    // ========== UPDATE CUSTOMER ==========
+    $updated = $this->aiclinic_update_customer(123, [
+        'customer_name'   => 'Nguyễn Văn A (Updated)',
+        'pricing_plan'    => 'GOLD',
+        'customer_status' => 'ACTIVE'
+    ]);
+
+    // Quick status update
+    $this->aiclinic_update_customer_status(123, 'INACTIVE');
+
+    // Quick plan update
+    $this->aiclinic_update_customer_plan(123, 'GOLD');
+
+    // ========== DELETE CUSTOMER ==========
+    $deleted = $this->aiclinic_delete_customer(123);
+
+    // ========== BULK DELETE ==========
+    $deleted_count = $this->aiclinic_bulk_delete_customers([123, 456, 789]);
+    echo "Deleted $deleted_count customers";
+
+    // ========== COUNT CUSTOMERS ==========
+    $total = $this->aiclinic_count_customers_by_status();
+    $active = $this->aiclinic_count_customers_by_status('ACTIVE');
+    $unpaid = $this->aiclinic_count_customers_by_status('UNPAID');
+
+    $basic_plan = $this->aiclinic_count_customers_by_plan('BASIC');
+    $gold_plan = $this->aiclinic_count_customers_by_plan('GOLD');
+
+    echo "Active: $active, Unpaid: $unpaid, Gold Plan: $gold_plan";
+
+    // ========== GET CUSTOMERS BY STATUS ==========
+    $active_customers = $this->aiclinic_get_customers_by_status('ACTIVE', 50);
+    $unpaid_customers = $this->aiclinic_get_customers_by_status('UNPAID', 20);
+
+    // ========== CHECK EXISTENCE ==========
+    if ($this->aiclinic_customer_key_exists('CUST_ABC123')) {
+        echo "Customer key already exists";
+    }
+
+    if ($this->aiclinic_domain_exists('example.com')) {
+        echo "Domain already registered";
+    }
+
+    // ========== GENERATE UNIQUE CUSTOMER KEY ==========
+    $customer_key = $this->aiclinic_generate_customer_key();
+    // Returns: CUST_A1B2C3D4E5F6
+
+    $custom_prefix = $this->aiclinic_generate_customer_key('PREMIUM');
+    // Returns: PREMIUM_X9Y8Z7W6V5U4
+
+    // ========== COMPLETE REGISTRATION WORKFLOW ==========
+    function register_new_customer($data) {
+        // Validate domain
+        if ($this->aiclinic_domain_exists($data['domain'])) {
+            return ['success' => false, 'message' => 'Domain already registered'];
+        }
+
+        // Generate customer key
+        $customer_key = $this->aiclinic_generate_customer_key();
+
+        // Create customer
+        $customer_id = $this->aiclinic_insert_customer([
+            'user_id'         => get_current_user_id(),
+            'customer_key'    => $customer_key,
+            'customer_name'   => sanitize_text_field($data['name']),
+            'pricing_plan'    => $data['plan'] ?? 'BASIC',
+            'domain'          => sanitize_text_field($data['domain']),
+            'customer_status' => 'UNPAID'
+        ]);
+
+        if (!$customer_id) {
+            return ['success' => false, 'message' => 'Failed to create customer'];
+        }
+
+        // Send welcome email
+        $this->send_welcome_email($customer_id, $customer_key);
+
+        return [
+            'success'      => true,
+            'customer_id'  => $customer_id,
+            'customer_key' => $customer_key,
+            'message'      => 'Registration successful'
+        ];
+    }
+
+    // ========== UPGRADE CUSTOMER PLAN ==========
+    function upgrade_customer_to_gold($customer_id) {
+        // Get customer
+        $customer = $this->aiclinic_get_customer_by_id($customer_id);
+        
+        if (!$customer) {
+            return false;
+        }
+
+        // Update plan
+        $updated = $this->aiclinic_update_customer_plan($customer_id, 'GOLD');
+
+        if ($updated) {
+            // Log the upgrade
+            $this->aiclinic_insert_error_log([
+                'action'  => 'customer_upgrade',
+                'message' => "Customer upgraded to GOLD plan",
+                'context' => [
+                    'customer_id'   => $customer_id,
+                    'old_plan'      => $customer['pricing_plan'],
+                    'new_plan'      => 'GOLD',
+                    'upgraded_by'   => get_current_user_id()
+                ]
+            ]);
+
+            // Send notification
+            $this->send_upgrade_notification($customer_id);
+        }
+
+        return $updated;
+    }
+
+    /**
+    * ============================================================================
+    * USAGE EXAMPLES - ERROR LOGS
+    * ============================================================================
+    */
+
+    // ========== INSERT ERROR LOG ==========
+    $log_id = $this->aiclinic_insert_error_log([
+        'action'  => 'api_call',
+        'message' => 'Failed to connect to OpenAI API',
+        'context' => [
+            'endpoint' => 'https://api.openai.com/v1/chat/completions',
+            'status_code' => 500,
+            'user_id' => get_current_user_id()
+        ]
+    ]);
+
+    // Simple log
+    $this->aiclinic_insert_error_log([
+        'action'  => 'database_error',
+        'message' => 'Failed to insert clinic record',
+        'context' => 'Table: wp_aiclinic_clinics'
+    ]);
+
+    // ========== GET ERROR LOGS WITH PAGINATION ==========
+    // Simple list
+    $logs = $this->aiclinic_get_error_logs([
+        'limit'  => 50,
+        'offset' => 0
+    ]);
+
+    // With search
+    $logs = $this->aiclinic_get_error_logs([
+        'search'        => 'API',
+        'column_search' => 'action',
+        'limit'         => 50,
+        'offset'        => 0
+    ]);
+
+    // With filter by action
+    $logs = $this->aiclinic_get_error_logs([
+        'action'         => 'api_call',
+        'limit'          => 50,
+        'offset'         => 0,
+        'order_by'       => 'created_at',
+        'sort_direction' => 'DESC'
+    ]);
+
+    // ========== GET PAGINATED LOGS (For DataTables) ==========
+    $result = $this->aiclinic_get_error_logs_paginated([
+        'search'         => $_POST['search']['value'] ?? '',
+        'column_search'  => 'action',
+        'action'         => $_POST['action_filter'] ?? '',
+        'limit'          => $_POST['length'] ?? 20,
+        'offset'         => $_POST['start'] ?? 0
+    ]);
+
+    wp_send_json([
+        'draw'            => intval($_POST['draw'] ?? 1),
+        'recordsTotal'    => $result['total'],
+        'recordsFiltered' => $result['filtered'],
+        'data'            => $result['data']
+    ]);
+
+    // ========== GET SINGLE LOG ==========
+    $log = $this->aiclinic_get_error_log_by_id(456);
+    if ($log) {
+        echo "Action: {$log['action']}, Message: {$log['message']}";
+    }
+
+    // ========== DELETE LOGS ==========
+    // Delete single log
+    $this->aiclinic_delete_error_log(456);
+
+    // Bulk delete
+    $deleted = $this->aiclinic_bulk_delete_error_logs([123, 456, 789]);
+    echo "Deleted $deleted logs";
+
+    // Delete old logs (older than 30 days)
+    $deleted = $this->aiclinic_cleanup_old_error_logs(30);
+    echo "Cleaned up $deleted old logs";
+
+    // Clear all logs
+    $this->aiclinic_clear_all_error_logs();
+
+    // ========== COUNT LOGS ==========
+    $total = $this->aiclinic_count_error_logs_by_action();
+    $api_errors = $this->aiclinic_count_error_logs_by_action('api_call');
+    $db_errors = $this->aiclinic_count_error_logs_by_action('database_error');
+
+    // ========== GET LOGS BY ACTION ==========
+    $api_logs = $this->aiclinic_get_error_logs_by_action('api_call', 20);
+    $db_logs = $this->aiclinic_get_error_logs_by_action('database_error', 20);
+
+    // ========== GET RECENT LOGS ==========
+    $recent = $this->aiclinic_get_recent_error_logs(10);
+    echo "<h3>Recent Errors:</h3><ul>";
+    foreach ($recent as $log) {
+        echo "<li>[{$log['action']}] {$log['message']}</li>";
+    }
+    echo "</ul>";
+
+    // ========== GET ERROR STATISTICS ==========
+    $stats = $this->aiclinic_get_error_log_stats(7); // Last 7 days
+
+    echo "<h3>Error Statistics (Last 7 Days):</h3><table>";
+    foreach ($stats as $stat) {
+        echo "<tr>";
+        echo "<td>{$stat['action']}</td>";
+        echo "<td>{$stat['count']} occurrences</td>";
+        echo "<td>Last: {$stat['last_occurrence']}</td>";
+        echo "</tr>";
+    }
+    echo "</table>";
+
+    // ========== GET UNIQUE ACTION NAMES ==========
+    $actions = $this->aiclinic_get_error_log_actions();
+    echo "<select name='action_filter'>";
+    echo "<option value=''>All Actions</option>";
+    foreach ($actions as $action) {
+        echo "<option value='$action'>$action</option>";
+    }
+    echo "</select>";
+
+    // ========== BATCH INSERT LOGS ==========
+    $logs = [
+        [
+            'action'  => 'import_data',
+            'message' => 'Import started',
+            'context' => 'File: data.csv'
+        ],
+        [
+            'action'  => 'import_data',
+            'message' => 'Processed 100 rows',
+            'context' => 'File: data.csv'
+        ],
+        [
+            'action'  => 'import_data',
+            'message' => 'Import completed',
+            'context' => 'File: data.csv, Total: 100 rows'
+        ]
+    ];
+
+    $this->aiclinic_batch_insert_error_logs($logs);
+
+    // ========== ERROR LOGGING HELPER FUNCTION ==========
+    function log_error($action, $message, $context = '') {
+        return $this->aiclinic_insert_error_log([
+            'action'  => $action,
+            'message' => $message,
+            'context' => $context
+        ]);
+    }
+
+    // Usage:
+    $this->log_error('api_call', 'API rate limit exceeded', [
+        'endpoint' => '/v1/chat/completions',
+        'retry_after' => 60
+    ]);
+
+    // ========== SCHEDULED CLEANUP (Cron Job) ==========
+    function scheduled_log_cleanup() {
+        // Delete logs older than 90 days
+        $deleted = $this->aiclinic_cleanup_old_error_logs(90);
+        
+        // Log the cleanup action
+        $this->aiclinic_insert_error_log([
+            'action'  => 'log_cleanup',
+            'message' => "Automated log cleanup completed",
+            'context' => "Deleted $deleted old log entries"
+        ]);
+    }
+
+    // Register cron job
+    add_action('aiclinic_daily_cleanup', 'scheduled_log_cleanup');
+
+    /**
+    * ============================================================================
+    * AJAX HANDLER EXAMPLES
+    * ============================================================================
+    */
+
+    // ========== AJAX: Get Customer Dashboard Stats ==========
+    function ajax_get_customer_dashboard_stats() {
+        check_ajax_referer('dashboard_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Permission denied']);
+        }
+
+        $stats = [
+            'total_customers'    => $this->aiclinic_count_customers_by_status(),
+            'active_customers'   => $this->aiclinic_count_customers_by_status('ACTIVE'),
+            'inactive_customers' => $this->aiclinic_count_customers_by_status('INACTIVE'),
+            'unpaid_customers'   => $this->aiclinic_count_customers_by_status('UNPAID'),
+            'basic_plan'         => $this->aiclinic_count_customers_by_plan('BASIC'),
+            'gold_plan'          => $this->aiclinic_count_customers_by_plan('GOLD'),
+            'recent_errors'      => count($this->aiclinic_get_recent_error_logs(10)),
+            'error_stats'        => $this->aiclinic_get_error_log_stats(7)
+        ];
+
+        wp_send_json_success($stats);
+    }
+
+    // ========== AJAX: Update Customer Status ==========
+    function ajax_update_customer_status() {
+        check_ajax_referer('customer_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Permission denied']);
+        }
+
+        $customer_id = absint($_POST['customer_id'] ?? 0);
+        $new_status = sanitize_text_field($_POST['status'] ?? '');
+
+        if (!in_array($new_status, ['ACTIVE', 'INACTIVE', 'UNPAID'])) {
+            wp_send_json_error(['message' => 'Invalid status']);
+        }
+
+        $result = $this->aiclinic_update_customer_status($customer_id, $new_status);
+
+        if ($result) {
+            // Log the change
+            $this->aiclinic_insert_error_log([
+                'action'  => 'customer_status_change',
+                'message' => "Customer status updated to $new_status",
+                'context' => [
+                    'customer_id' => $customer_id,
+                    'new_status'  => $new_status,
+                    'updated_by'  => get_current_user_id()
+                ]
+            ]);
+
+            wp_send_json_success(['message' => 'Status updated successfully']);
+        } else {
+            wp_send_json_error(['message' => 'Failed to update status']);
+        }
+    }
+
+    // ========== AJAX: Bulk Action on Customers ==========
+    function ajax_bulk_customer_action() {
+        check_ajax_referer('customer_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Permission denied']);
+        }
+
+        $action = sanitize_text_field($_POST['action'] ?? '');
+        $customer_ids = array_map('absint', $_POST['customer_ids'] ?? []);
+
+        if (empty($customer_ids)) {
+            wp_send_json_error(['message' => 'No customers selected']);
+        }
+
+        switch ($action) {
+            case 'delete':
+                $deleted = $this->aiclinic_bulk_delete_customers($customer_ids);
+                wp_send_json_success(['message' => "Deleted $deleted customers"]);
+                break;
+
+            case 'activate':
+                $updated = 0;
+                foreach ($customer_ids as $id) {
+                    if ($this->aiclinic_update_customer_status($id, 'ACTIVE')) {
+                        $updated++;
+                    }
+                }
+                wp_send_json_success(['message' => "Activated $updated customers"]);
+                break;
+
+            case 'deactivate':
+                $updated = 0;
+                foreach ($customer_ids as $id) {
+                    if ($this->aiclinic_update_customer_status($id, 'INACTIVE')) {
+                        $updated++;
+                    }
+                }
+                wp_send_json_success(['message' => "Deactivated $updated customers"]);
+                break;
+
+            default:
+                wp_send_json_error(['message' => 'Invalid action']);
+        }
+    }
 }

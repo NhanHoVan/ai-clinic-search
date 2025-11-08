@@ -49,29 +49,29 @@ CREATE TABLE IF NOT EXISTS wp_aiclinic_clinics (
     INDEX idx_clinics_name (name)
 )  {CHARSET_COLLATE};
 
--- Table for storing user reviews of clinics
-CREATE TABLE IF NOT EXISTS wp_aiclinic_reviews (
-    id INT AUTO_INCREMENT PRIMARY KEY, -- Unique review ID
-    clinic_id INT NOT NULL COMMENT 'Associated clinic ID',
-    reviewer_name VARCHAR(255) COMMENT 'Name of the reviewer (optional)',
-    rating INT CHECK (rating BETWEEN 1 AND 5) COMMENT 'Rating score between 1 and 5',
-    comment TEXT COMMENT 'User review comment text',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Review submission time',
-    FOREIGN KEY (clinic_id) REFERENCES wp_aiclinic_clinics(id) ON DELETE CASCADE
-) {CHARSET_COLLATE};
-
 -- Table for storing clinic tags (e.g., "Orthopedic", "Oncology", "ENT")
 CREATE TABLE IF NOT EXISTS wp_aiclinic_tags (
-    id INT AUTO_INCREMENT PRIMARY KEY, -- Unique tag ID
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY, -- Unique tag ID
     name VARCHAR(100) NOT NULL COMMENT 'Tag name, e.g., "Orthopedic" or "Oncology"',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation time'
 ) {CHARSET_COLLATE};
 
 -- Junction table linking clinics and tags (many-to-many relationship)
 CREATE TABLE IF NOT EXISTS wp_aiclinic_tag_relations (
-    clinic_id INT NOT NULL COMMENT 'Related clinic ID',
-    tag_id INT NOT NULL COMMENT 'Related tag ID',
+    clinic_id BIGINT UNSIGNED NOT NULL COMMENT 'Related clinic ID',
+    tag_id BIGINT UNSIGNED NOT NULL COMMENT 'Related tag ID',
     PRIMARY KEY (clinic_id, tag_id),
     FOREIGN KEY (clinic_id) REFERENCES wp_aiclinic_clinics(id) ON DELETE CASCADE,
     FOREIGN KEY (tag_id) REFERENCES wp_aiclinic_tags(id) ON DELETE CASCADE
+) {CHARSET_COLLATE};
+
+-- Table for storing user reviews of clinics
+CREATE TABLE IF NOT EXISTS wp_aiclinic_reviews (
+    id INT AUTO_INCREMENT PRIMARY KEY, -- Unique review ID
+    clinic_id BIGINT UNSIGNED NOT NULL COMMENT 'Associated clinic ID',
+    reviewer_name VARCHAR(255) COMMENT 'Name of the reviewer (optional)',
+    rating TINYINT UNSIGNED COMMENT 'Rating score between 1 and 5',
+    comment TEXT COMMENT 'User review comment text',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Review submission time',
+    FOREIGN KEY (clinic_id) REFERENCES wp_aiclinic_clinics(id) ON DELETE CASCADE
 ) {CHARSET_COLLATE};

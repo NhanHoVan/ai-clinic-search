@@ -916,4 +916,862 @@ class Ai_Clinic_Search_DB
 
         return $this->aiclinic_sync_clinic_tags($clinic_id, $tag_ids);
     }
+
+    /**
+     * ============================================================================
+     * PLUGIN SETTINGS TABLE - CRUD OPERATIONS
+     * ============================================================================
+     */
+
+    /**
+     * Insert or update a plugin setting.
+     *
+     * @param string $option_name  Setting name (required).
+     * @param mixed  $option_value Setting value (required).
+     * @return int|false Number of rows affected or false on failure.
+     */
+    public function aiclinic_set_setting($option_name, $option_value)
+    {
+        $data = [
+            'option_name'  => sanitize_key($option_name),
+            'option_value' => is_array($option_value)
+                ? wp_json_encode($option_value)
+                : sanitize_textarea_field($option_value),
+            'updated_at'   => current_time('mysql')
+        ];
+
+        return $this->helper->database->aiclinic_upsert(
+            'aiclinic_plugin_settings',
+            $data,
+            ['option_name' => sanitize_key($option_name)]
+        );
+    }
+
+    /**
+     * Get a plugin setting value.
+     *
+     * @param string $option_name Setting name.
+     * @param mixed  $default     Default value if not found.
+     * @param bool   $decode_json Whether to decode JSON values (default: false).
+     * @return mixed Setting value or default.
+     */
+    public function aiclinic_get_setting($option_name, $default = '', $decode_json = false)
+    {
+        $results = $this->helper->database->aiclinic_get_all('aiclinic_plugin_settings', [
+            'filters' => ['option_name' => sanitize_key($option_name)],
+            'limit'   => 1
+        ]);
+
+        if (empty($results)) {
+            return $default;
+        }
+
+        $value = $results[0]['option_value'];
+
+        if ($decode_json) {
+            $decoded = json_decode($value, true);
+            return $decoded !== null ? $decoded : $value;
+        }
+
+        return $value;
+    }
+
+    /**
+     * Get multiple settings at once.
+     *
+     * @param array $option_names Array of setting names.
+     * @param bool  $decode_json  Whether to decode JSON values.
+     * @return array Associative array of settings [option_name => option_value].
+     */
+    public function aiclinic_get_settings(array $option_names, $decode_json = false)
+    {
+        if (empty($option_names)) {
+            return [];
+        }
+
+        $results = $this->helper->database->aiclinic_get_all('aiclinic_plugin_settings', [
+            'filters' => ['option_name' => $option_names]
+        ]);
+
+        $settings = array_fill_keys($option_names, '');
+
+        foreach ($results as $row) {
+            $value = $row['option_value'];
+
+            if ($decode_json) {
+                $decoded = json_decode($value, true);
+                $value = $decoded !== null ? $decoded : $value;
+            }
+
+            $settings[$row['option_name']] = $value;
+        }
+
+        return $settings;
+    }
+
+    /**
+     * Get all plugin settings.
+     *
+     * @param array $args Pagination arguments.
+     * @return array Array of all settings.
+     */
+    public function aiclinic_get_all_settings($args = [])
+    {
+        $defaults = [
+            'limit'          => 100,
+            'offset'         => 0,
+            'order_by'       => 'option_name',
+            'sort_direction' => 'ASC'
+        ];
+
+        $args = wp_parse_args($args, $defaults);
+
+        return $this->helper->database->aiclinic_get_all('aiclinic_plugin_settings', $args) ?: [];
+    }
+
+    /**
+     * Get paginated settings with search.
+     *
+     * @param array $args {
+     *     @type string $search         Search keyword
+     *     @type int    $limit          Records per page
+     *     @type int    $offset         Offset for pagination
+     *     @type string $order_by       Column to sort by
+     *     @type string $sort_direction Sort direction
+     * }
+     * @return array Paginated result with data, total, filtered.
+     */
+    public function aiclinic_get_settings_paginated($args = [])
+    {
+        $defaults = [
+            'search'         => '',
+            'column_search'  => 'option_name',
+            'limit'          => 20,
+            'offset'         => 0,
+            'order_by'       => 'option_name',
+            'sort_direction' => 'ASC'
+        ];
+
+        $args = wp_parse_args($args, $defaults);
+
+        $data = $this->helper->database->aiclinic_get_all('aiclinic_plugin_settings', $args);
+
+        $count_args = [
+            'search'        => $args['search'],
+            'column_search' => $args['column_search']
+        ];
+
+        return [
+            'data'     => $data ?: [],
+            'total'    => $this->helper->database->aiclinic_count_record('aiclinic_plugin_settings', []) ?: 0,
+            'filtered' => $this->helper->database->aiclinic_count_record('aiclinic_plugin_settings', $count_args) ?: 0
+        ];
+    }
+
+    /**
+     * Check if a setting exists.
+     *
+     * @param string $option_name Setting name.
+     * @return bool True if exists, false otherwise.
+     */
+    public function aiclinic_setting_exists($option_name): bool
+    {
+        return $this->helper->database->aiclinic_record_exists(
+            'aiclinic_plugin_settings',
+            ['option_name' => sanitize_key($option_name)]
+        );
+    }
+
+    /**
+     * Delete a setting.
+     *
+     * @param string $option_name Setting name to delete.
+     * @return int|false Number of rows deleted or false on failure.
+     */
+    public function aiclinic_delete_setting($option_name)
+    {
+        return $this->helper->database->aiclinic_delete_records(
+            'aiclinic_plugin_settings',
+            ['option_name' => sanitize_key($option_name)]
+        );
+    }
+
+    /**
+     * Bulk update multiple settings.
+     *
+     * @param array $settings Associative array [option_name => option_value].
+     * @return bool True if all succeeded, false otherwise.
+     */
+    public function aiclinic_bulk_update_settings(array $settings): bool
+    {
+        $success = true;
+
+        foreach ($settings as $name => $value) {
+            $result = $this->aiclinic_set_setting($name, $value);
+            if ($result === false) {
+                $success = false;
+            }
+        }
+
+        return $success;
+    }
+
+    /**
+     * Delete multiple settings.
+     *
+     * @param array $option_names Array of setting names to delete.
+     * @return int Number of deleted settings.
+     */
+    public function aiclinic_bulk_delete_settings(array $option_names): int
+    {
+        $deleted = 0;
+
+        foreach ($option_names as $name) {
+            $result = $this->aiclinic_delete_setting($name);
+            if ($result !== false) {
+                $deleted += $result;
+            }
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * Get settings by prefix (e.g., 'ai_', 'email_').
+     *
+     * @param string $prefix Setting name prefix.
+     * @return array Array of matching settings.
+     */
+    public function aiclinic_get_settings_by_prefix($prefix)
+    {
+        return $this->helper->database->aiclinic_get_all('aiclinic_plugin_settings', [
+            'search'        => sanitize_text_field($prefix),
+            'column_search' => 'option_name',
+            'limit'         => 100
+        ]) ?: [];
+    }
+
+    /**
+     * ============================================================================
+     * CUSTOMERS TABLE - CRUD OPERATIONS
+     * ============================================================================
+     */
+
+    /**
+     * Insert a new customer.
+     *
+     * @param array $data {
+     *     @type int    $user_id        WordPress user ID (required)
+     *     @type string $customer_key   Unique customer key (required)
+     *     @type string $customer_name  Customer name (required)
+     *     @type string $pricing_plan   Pricing plan (BASIC|GOLD)
+     *     @type string $domain         Customer domain
+     *     @type string $customer_status Customer status (ACTIVE|INACTIVE|UNPAID)
+     * }
+     * @return int|false The inserted customer ID or false on failure.
+     */
+    public function aiclinic_insert_customer($data)
+    {
+        $data_to_insert = [
+            'user_id'         => absint($data['user_id']),
+            'customer_key'    => sanitize_text_field($data['customer_key']),
+            'customer_name'   => sanitize_text_field($data['customer_name']),
+            'pricing_plan'    => in_array($data['pricing_plan'] ?? '', ['BASIC', 'GOLD'])
+                ? $data['pricing_plan']
+                : 'BASIC',
+            'domain'          => !empty($data['domain'])
+                ? sanitize_text_field($data['domain'])
+                : null,
+            'register_date'   => current_time('mysql'),
+            'customer_status' => in_array($data['customer_status'] ?? '', ['ACTIVE', 'INACTIVE', 'UNPAID'])
+                ? $data['customer_status']
+                : 'UNPAID',
+            'updated_at'      => current_time('mysql'),
+        ];
+
+        $result = $this->helper->database->aiclinic_insert('aiclinic_customers', $data_to_insert);
+
+        return $result ? $this->wpdb->insert_id : false;
+    }
+
+    /**
+     * Get paginated list of customers with search and filters.
+     *
+     * @param array $args {
+     *     @type string $search         Search keyword (searches in customer_name, domain)
+     *     @type string $pricing_plan   Filter by pricing plan
+     *     @type string $customer_status Filter by customer status
+     *     @type int    $limit          Records per page
+     *     @type int    $offset         Offset for pagination
+     *     @type string $order_by       Column to sort by
+     *     @type string $sort_direction Sort direction
+     * }
+     * @return array|false Array of customer records or false on error.
+     */
+    public function aiclinic_get_customers($args = [])
+    {
+        $defaults = [
+            'search'          => '',
+            'column_search'   => 'customer_name',
+            'pricing_plan'    => '',
+            'customer_status' => '',
+            'limit'           => 10,
+            'offset'          => 0,
+            'order_by'        => 'register_date',
+            'sort_direction'  => 'DESC',
+            'filters'         => []
+        ];
+
+        $args = wp_parse_args($args, $defaults);
+
+        // Build filters
+        if (!empty($args['pricing_plan'])) {
+            $args['filters']['pricing_plan'] = sanitize_text_field($args['pricing_plan']);
+        }
+
+        if (!empty($args['customer_status'])) {
+            $args['filters']['customer_status'] = sanitize_text_field($args['customer_status']);
+        }
+
+        return $this->helper->database->aiclinic_get_all('aiclinic_customers', $args);
+    }
+
+    /**
+     * Get paginated customers with total counts.
+     *
+     * @param array $args Same as aiclinic_get_customers().
+     * @return array Paginated result with data, total, filtered.
+     */
+    public function aiclinic_get_customers_paginated($args = [])
+    {
+        // Prepare count arguments
+        $count_args = [
+            'search'        => $args['search'] ?? '',
+            'column_search' => $args['column_search'] ?? 'customer_name',
+            'filters'       => []
+        ];
+
+        if (!empty($args['pricing_plan'])) {
+            $count_args['filters']['pricing_plan'] = sanitize_text_field($args['pricing_plan']);
+        }
+
+        if (!empty($args['customer_status'])) {
+            $count_args['filters']['customer_status'] = sanitize_text_field($args['customer_status']);
+        }
+
+        return [
+            'data'     => $this->aiclinic_get_customers($args) ?: [],
+            'total'    => $this->helper->database->aiclinic_count_record('aiclinic_customers', []) ?: 0,
+            'filtered' => $this->helper->database->aiclinic_count_record('aiclinic_customers', $count_args) ?: 0
+        ];
+    }
+
+    /**
+     * Get a single customer by ID.
+     *
+     * @param int $customer_id Customer ID.
+     * @return array|null Customer record or null if not found.
+     */
+    public function aiclinic_get_customer_by_id($customer_id)
+    {
+        return $this->helper->database->aiclinic_get_by_id('aiclinic_customers', absint($customer_id));
+    }
+
+    /**
+     * Get customer by WordPress user ID.
+     *
+     * @param int $user_id WordPress user ID.
+     * @return array|null Customer record or null if not found.
+     */
+    public function aiclinic_get_customer_by_user_id($user_id)
+    {
+        $results = $this->helper->database->aiclinic_get_all('aiclinic_customers', [
+            'filters' => ['user_id' => absint($user_id)],
+            'limit'   => 1
+        ]);
+
+        return !empty($results) ? $results[0] : null;
+    }
+
+    /**
+     * Get customer by customer key.
+     *
+     * @param string $customer_key Unique customer key.
+     * @return array|null Customer record or null if not found.
+     */
+    public function aiclinic_get_customer_by_key($customer_key)
+    {
+        $results = $this->helper->database->aiclinic_get_all('aiclinic_customers', [
+            'filters' => ['customer_key' => sanitize_text_field($customer_key)],
+            'limit'   => 1
+        ]);
+
+        return !empty($results) ? $results[0] : null;
+    }
+
+    /**
+     * Get customer by domain.
+     *
+     * @param string $domain Customer domain.
+     * @return array|null Customer record or null if not found.
+     */
+    public function aiclinic_get_customer_by_domain($domain)
+    {
+        $results = $this->helper->database->aiclinic_get_all('aiclinic_customers', [
+            'filters' => ['domain' => sanitize_text_field($domain)],
+            'limit'   => 1
+        ]);
+
+        return !empty($results) ? $results[0] : null;
+    }
+
+    /**
+     * Update a customer record.
+     *
+     * @param int   $customer_id Customer ID to update.
+     * @param array $data        Data to update.
+     * @return int|false Number of rows updated or false on failure.
+     */
+    public function aiclinic_update_customer($customer_id, $data)
+    {
+        $data_to_update = [];
+
+        if (isset($data['customer_name'])) {
+            $data_to_update['customer_name'] = sanitize_text_field($data['customer_name']);
+        }
+
+        if (isset($data['pricing_plan']) && in_array($data['pricing_plan'], ['BASIC', 'GOLD'])) {
+            $data_to_update['pricing_plan'] = $data['pricing_plan'];
+        }
+
+        if (isset($data['domain'])) {
+            $data_to_update['domain'] = !empty($data['domain'])
+                ? sanitize_text_field($data['domain'])
+                : null;
+        }
+
+        if (isset($data['customer_status']) && in_array($data['customer_status'], ['ACTIVE', 'INACTIVE', 'UNPAID'])) {
+            $data_to_update['customer_status'] = $data['customer_status'];
+        }
+
+        if (empty($data_to_update)) {
+            return false;
+        }
+
+        $data_to_update['updated_at'] = current_time('mysql');
+
+        return $this->helper->database->aiclinic_update(
+            'aiclinic_customers',
+            $data_to_update,
+            ['id' => absint($customer_id)]
+        );
+    }
+
+    /**
+     * Update customer status.
+     *
+     * @param int    $customer_id Customer ID.
+     * @param string $status      New status (ACTIVE|INACTIVE|UNPAID).
+     * @return int|false Number of rows updated or false on failure.
+     */
+    public function aiclinic_update_customer_status($customer_id, $status)
+    {
+        if (!in_array($status, ['ACTIVE', 'INACTIVE', 'UNPAID'])) {
+            return false;
+        }
+
+        return $this->helper->database->aiclinic_update(
+            'aiclinic_customers',
+            [
+                'customer_status' => $status,
+                'updated_at'      => current_time('mysql')
+            ],
+            ['id' => absint($customer_id)]
+        );
+    }
+
+    /**
+     * Update customer pricing plan.
+     *
+     * @param int    $customer_id Customer ID.
+     * @param string $plan        New plan (BASIC|GOLD).
+     * @return int|false Number of rows updated or false on failure.
+     */
+    public function aiclinic_update_customer_plan($customer_id, $plan)
+    {
+        if (!in_array($plan, ['BASIC', 'GOLD'])) {
+            return false;
+        }
+
+        return $this->helper->database->aiclinic_update(
+            'aiclinic_customers',
+            [
+                'pricing_plan' => $plan,
+                'updated_at'   => current_time('mysql')
+            ],
+            ['id' => absint($customer_id)]
+        );
+    }
+
+    /**
+     * Delete a customer by ID.
+     *
+     * @param int $customer_id Customer ID to delete.
+     * @return int|false Number of rows deleted or false on failure.
+     */
+    public function aiclinic_delete_customer($customer_id)
+    {
+        return $this->helper->database->aiclinic_delete_record_by_id('aiclinic_customers', absint($customer_id));
+    }
+
+    /**
+     * Bulk delete customers by IDs.
+     *
+     * @param array $customer_ids Array of customer IDs.
+     * @return int Number of deleted customers.
+     */
+    public function aiclinic_bulk_delete_customers(array $customer_ids): int
+    {
+        $deleted = 0;
+
+        foreach ($customer_ids as $id) {
+            $result = $this->aiclinic_delete_customer($id);
+            if ($result !== false) {
+                $deleted += $result;
+            }
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * Count customers by status.
+     *
+     * @param string $status Customer status (ACTIVE|INACTIVE|UNPAID).
+     * @return int Number of customers.
+     */
+    public function aiclinic_count_customers_by_status($status = '')
+    {
+        $args = [];
+
+        if (!empty($status)) {
+            $args['filters'] = ['customer_status' => sanitize_text_field($status)];
+        }
+
+        return $this->helper->database->aiclinic_count_record('aiclinic_customers', $args) ?: 0;
+    }
+
+    /**
+     * Count customers by pricing plan.
+     *
+     * @param string $plan Pricing plan (BASIC|GOLD).
+     * @return int Number of customers.
+     */
+    public function aiclinic_count_customers_by_plan($plan = '')
+    {
+        $args = [];
+
+        if (!empty($plan)) {
+            $args['filters'] = ['pricing_plan' => sanitize_text_field($plan)];
+        }
+
+        return $this->helper->database->aiclinic_count_record('aiclinic_customers', $args) ?: 0;
+    }
+
+    /**
+     * Get customers by status.
+     *
+     * @param string $status Customer status.
+     * @param int    $limit  Number of records.
+     * @return array Array of customer records.
+     */
+    public function aiclinic_get_customers_by_status($status, $limit = 10)
+    {
+        return $this->helper->database->aiclinic_get_all('aiclinic_customers', [
+            'filters' => ['customer_status' => sanitize_text_field($status)],
+            'limit'   => absint($limit)
+        ]) ?: [];
+    }
+
+    /**
+     * Check if customer key exists.
+     *
+     * @param string $customer_key Customer key to check.
+     * @return bool True if exists, false otherwise.
+     */
+    public function aiclinic_customer_key_exists($customer_key): bool
+    {
+        return $this->helper->database->aiclinic_record_exists(
+            'aiclinic_customers',
+            ['customer_key' => sanitize_text_field($customer_key)]
+        );
+    }
+
+    /**
+     * Check if domain exists.
+     *
+     * @param string $domain Domain to check.
+     * @return bool True if exists, false otherwise.
+     */
+    public function aiclinic_domain_exists($domain): bool
+    {
+        return $this->helper->database->aiclinic_record_exists(
+            'aiclinic_customers',
+            ['domain' => sanitize_text_field($domain)]
+        );
+    }
+
+    /**
+     * Generate unique customer key.
+     *
+     * @param string $prefix Optional prefix (default: 'CUST').
+     * @return string Unique customer key.
+     */
+    public function aiclinic_generate_customer_key($prefix = 'CUST'): string
+    {
+        do {
+            $key = strtoupper($prefix . '_' . wp_generate_password(12, false));
+        } while ($this->aiclinic_customer_key_exists($key));
+
+        return $key;
+    }
+
+    /**
+     * ============================================================================
+     * ERROR LOGS TABLE - CRUD OPERATIONS
+     * ============================================================================
+     */
+
+    /**
+     * Insert an error log entry.
+     *
+     * @param array $data {
+     *     @type string $action  The action being executed when error occurred (required)
+     *     @type string $message The error message to be logged (required)
+     *     @type mixed  $context Additional context (array will be JSON encoded)
+     * }
+     * @return int|false The inserted log ID or false on failure.
+     */
+    public function aiclinic_insert_error_log($data)
+    {
+        $data_to_insert = [
+            'action'     => sanitize_text_field($data['action'] ?? ''),
+            'message'    => sanitize_textarea_field($data['message'] ?? ''),
+            'context'    => is_array($data['context'] ?? '')
+                ? wp_json_encode($data['context'])
+                : sanitize_textarea_field($data['context'] ?? ''),
+            'created_at' => current_time('mysql'),
+        ];
+
+        $result = $this->helper->database->aiclinic_insert('aiclinic_plugin_error_logs', $data_to_insert);
+
+        return $result ? $this->wpdb->insert_id : false;
+    }
+
+    /**
+     * Get paginated error logs with search and filters.
+     *
+     * @param array $args {
+     *     @type string $search         Search keyword (searches in action or message)
+     *     @type string $action         Filter by action
+     *     @type int    $limit          Records per page
+     *     @type int    $offset         Offset for pagination
+     *     @type string $order_by       Column to sort by
+     *     @type string $sort_direction Sort direction
+     * }
+     * @return array|false Array of log records or false on error.
+     */
+    public function aiclinic_get_error_logs($args = [])
+    {
+        $defaults = [
+            'search'         => '',
+            'column_search'  => 'action',
+            'action'         => '',
+            'limit'          => 20,
+            'offset'         => 0,
+            'order_by'       => 'created_at',
+            'sort_direction' => 'DESC',
+            'filters'        => []
+        ];
+
+        $args = wp_parse_args($args, $defaults);
+
+        // Add action filter if specified
+        if (!empty($args['action'])) {
+            $args['filters']['action'] = sanitize_text_field($args['action']);
+        }
+
+        return $this->helper->database->aiclinic_get_all('aiclinic_plugin_error_logs', $args);
+    }
+
+    /**
+     * Get paginated error logs with counts.
+     *
+     * @param array $args Same as aiclinic_get_error_logs().
+     * @return array Paginated result with data, total, filtered.
+     */
+    public function aiclinic_get_error_logs_paginated($args = [])
+    {
+        $count_args = [
+            'search'        => $args['search'] ?? '',
+            'column_search' => $args['column_search'] ?? 'action',
+            'filters'       => []
+        ];
+
+        if (!empty($args['action'])) {
+            $count_args['filters']['action'] = sanitize_text_field($args['action']);
+        }
+
+        return [
+            'data'     => $this->aiclinic_get_error_logs($args) ?: [],
+            'total'    => $this->helper->database->aiclinic_count_record('aiclinic_plugin_error_logs', []) ?: 0,
+            'filtered' => $this->helper->database->aiclinic_count_record('aiclinic_plugin_error_logs', $count_args) ?: 0
+        ];
+    }
+
+    /**
+     * Get a single error log by ID.
+     *
+     * @param int $log_id Log ID.
+     * @return array|null Log record or null if not found.
+     */
+    public function aiclinic_get_error_log_by_id($log_id)
+    {
+        return $this->helper->database->aiclinic_get_by_id('aiclinic_plugin_error_logs', absint($log_id));
+    }
+
+    /**
+     * Delete an error log by ID.
+     *
+     * @param int $log_id Log ID to delete.
+     * @return int|false Number of rows deleted or false on failure.
+     */
+    public function aiclinic_delete_error_log($log_id)
+    {
+        return $this->helper->database->aiclinic_delete_record_by_id('aiclinic_plugin_error_logs', absint($log_id));
+    }
+
+    /**
+     * Bulk delete error logs by IDs.
+     *
+     * @param array $log_ids Array of log IDs.
+     * @return int Number of deleted logs.
+     */
+    public function aiclinic_bulk_delete_error_logs(array $log_ids): int
+    {
+        $deleted = 0;
+
+        foreach ($log_ids as $id) {
+            $result = $this->aiclinic_delete_error_log($id);
+            if ($result !== false) {
+                $deleted += $result;
+            }
+        }
+
+        return $deleted;
+    }
+
+    /**
+     * Delete error logs older than specified days.
+     *
+     * @param int $days Number of days to keep logs (default: 30).
+     * @return int|false Number of deleted rows or false on failure.
+     */
+    public function aiclinic_cleanup_old_error_logs($days = 30)
+    {
+        global $wpdb;
+
+        $table = $wpdb->prefix . 'aiclinic_plugin_error_logs';
+        $date_threshold = date('Y-m-d H:i:s', strtotime("-$days days"));
+
+        $sql = $wpdb->prepare(
+            "DELETE FROM `$table` WHERE `created_at` < %s",
+            $date_threshold
+        );
+
+        return $wpdb->query($sql);
+    }
+
+    /**
+     * Count error logs by action.
+     *
+     * @param string $action Action name.
+     * @return int Number of logs.
+     */
+    public function aiclinic_count_error_logs_by_action($action = '')
+    {
+        $args = [];
+
+        if (!empty($action)) {
+            $args['filters'] = ['action' => sanitize_text_field($action)];
+        }
+
+        return $this->helper->database->aiclinic_count_record('aiclinic_plugin_error_logs', $args) ?: 0;
+    }
+
+    /**
+     * Get error logs by action.
+     *
+     * @param string $action Action name.
+     * @param int    $limit  Number of records (default: 20).
+     * @return array Array of log records.
+     */
+    public function aiclinic_get_error_logs_by_action($action, $limit = 20)
+    {
+        return $this->helper->database->aiclinic_get_all('aiclinic_plugin_error_logs', [
+            'filters' => ['action' => sanitize_text_field($action)],
+            'limit'   => absint($limit),
+            'order_by' => 'created_at',
+            'sort_direction' => 'DESC'
+        ]) ?: [];
+    }
+
+    /**
+     * Get recent error logs (last N logs).
+     *
+     * @param int $limit Number of recent logs (default: 10).
+     * @return array Array of recent log records.
+     */
+    public function aiclinic_get_recent_error_logs($limit = 10): array
+    {
+        return $this->helper->database->aiclinic_get_all('aiclinic_plugin_error_logs', [
+            'limit'          => absint($limit),
+            'order_by'       => 'created_at',
+            'sort_direction' => 'DESC'
+        ]) ?: [];
+    }
+
+    /**
+     * Batch insert multiple error logs.
+     *
+     * @param array $logs Array of log entries.
+     * @return bool True if all inserts succeeded, false otherwise.
+     */
+    public function aiclinic_batch_insert_error_logs(array $logs): bool
+    {
+        if (empty($logs)) {
+            return true;
+        }
+
+        $success = true;
+
+        foreach ($logs as $log) {
+            $result = $this->aiclinic_insert_error_log($log);
+            if ($result === false) {
+                $success = false;
+            }
+        }
+
+        return $success;
+    }
+
+    /**
+     * Clear all error logs.
+     *
+     * @return bool True on success, false on failure.
+     */
+    public function aiclinic_clear_all_error_logs(): bool
+    {
+        return $this->helper->database->aiclinic_truncate_table('aiclinic_plugin_error_logs');
+    }
 }
