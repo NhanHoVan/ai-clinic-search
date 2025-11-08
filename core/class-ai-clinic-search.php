@@ -134,6 +134,8 @@ if (! class_exists('Ai_Clinic_Search')) :
 				//Fire the plugin logic
 				new Ai_Clinic_Search_Run();
 				new AI_Clinic_Search_Shortcode();
+				new Ai_Clinic_REST_Register();
+				new Ai_Clinic_Controller_Clinic();
 				new Ai_Clinic_Search_Uninstaller();
 
 				/**
@@ -161,6 +163,9 @@ if (! class_exists('Ai_Clinic_Search')) :
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/classes/class-ai-clinic-search-run.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/classes/class-ai-clinic-search-uninstaller.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/classes/class-ai-clinic-search-shortcode.php';
+			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/classes/class-ai-clinic-search-controller-clinic.php';
+			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/classes/class-ai-clinic-search-rest-register.php';
+			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/classes/class-ai-clinic-search-permissions.php';
 		}
 
 		/**
