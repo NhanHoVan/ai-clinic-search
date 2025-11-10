@@ -15,35 +15,84 @@ if (!defined('ABSPATH')) exit;
  */
 class Ai_Clinic_Controller_Clinic
 {
-    public function get_clinics($request)
-    {
-        global $wpdb;
-        $table = $wpdb->prefix . 'aiclinic_clinics';
-        $rows = $wpdb->get_results("SELECT id, name, address, province, district FROM $table");
+    private $location_service;
 
-        return $rows ?: [];
+    public function __construct()
+    {
+        $this->location_service = new Ai_Clinic_Service_Location();
     }
 
-    public function create_clinic($request)
+    /**
+     * POST ai-clinic-search/clinics/search
+     */
+    public function search_clinics($request)
     {
-        global $wpdb;
-        $table = $wpdb->prefix . 'aiclinic_clinics';
-
         $params = $request->get_json_params();
-        $name = sanitize_text_field($params['name'] ?? '');
-        $address = sanitize_textarea_field($params['address'] ?? '');
+        $keyword = sanitize_text_field($params['keyword'] ?? '');
         $province = sanitize_text_field($params['province'] ?? '');
-        $district = sanitize_text_field($params['district'] ?? '');
 
-        if (!$name) {
-            return new WP_Error('missing_name', 'Tên phòng khám là bắt buộc.', ['status' => 400]);
+        if (empty($keyword)) {
+            return new WP_REST_Response(['error' => 'Keyword is required'], 400);
         }
 
-        $wpdb->insert($table, compact('name', 'address', 'province', 'district'));
+        // 1️⃣ Gọi Google Search API (tạm thời mock)
+        // 2️⃣ Gọi AI parser service
+        // 3️⃣ Lưu dữ liệu phòng khám vào DB
+        // 4️⃣ Trả về danh sách đã lưu
+        $results = [];
 
-        return rest_ensure_response([
-            'id' => $wpdb->insert_id,
-            'message' => 'Đã tạo phòng khám mới',
-        ]);
+        return new WP_REST_Response([
+            'success' => true,
+            'keyword' => $keyword,
+            'clinics' => $results,
+        ], 200);
+    }
+
+    /**
+     * GET ai-clinic-search/provinces
+     */
+    public function get_provinces($request)
+    {
+        $search = sanitize_text_field($request->get_param('search'));
+
+        $provinces = $this->location_service->get_all_provinces($search);
+
+        if (empty($provinces)) {
+            return new WP_REST_Response(['message' => 'No provinces found.'], 200);
+        }
+
+        return new WP_REST_Response($provinces, 200);
+    }
+
+    /**
+     * GET ai-clinic-search/districts?province_code=1
+     */
+    public function get_districts($request)
+    {
+        $province_code = sanitize_text_field($request->get_param('province_code'));
+        $search = sanitize_text_field($request->get_param('search'));
+
+        if (empty($province_code)) {
+            return new WP_REST_Response(['error' => 'province_code is required'], 400);
+        }
+
+        $districts = $this->location_service->get_districts_by_province($province_code, $search);
+
+        if (empty($districts)) {
+            return new WP_REST_Response(['error' => 'Province not found or has no districts'], 404);
+        }
+
+        return new WP_REST_Response($districts, 200);
+    }
+
+
+    public function get_specialties($request)
+    {
+        // TODO
+    }
+
+    public function get_clinics($request)
+    {
+        // TODO
     }
 }
