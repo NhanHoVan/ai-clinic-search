@@ -139,55 +139,63 @@ export default function App() {
 			</Title>
 
 			<div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-				<Select
-					showSearch
-					placeholder="Select Province"
-					style={{ width: 200 }}
-					size="large"
-					value={selectedProvince || undefined}
-					onChange={handleProvinceChange}
-					filterSort={(a, b) =>
-						(a?.label ?? "").localeCompare(b?.label ?? "")
-					}
-					allowClear
-					optionFilterProp="label"
-					options={provinces.map((p) => ({
-						label: p.name,
-						value: p.code,
-					}))}
-					disabled={loading}
-				/>
+				<div className="flex-col-w200">
+					<span className="label-input">Chọn tỉnh/thành phố</span>
+					<Select
+						showSearch
+						placeholder="Select Province"
+						size="large"
+						value={selectedProvince || undefined}
+						onChange={handleProvinceChange}
+						filterSort={(a, b) =>
+							(a?.label ?? "").localeCompare(b?.label ?? "")
+						}
+						allowClear
+						optionFilterProp="label"
+						options={provinces.map((p) => ({
+							label: p.name,
+							value: p.code,
+						}))}
+						disabled={loading}
+					/>
+				</div>
 
-				<Select
-					showSearch
-					placeholder="Select District"
-					style={{ width: 200 }}
-					size="large"
-					value={selectedDistrict || undefined}
-					onChange={handleDistrictChange}
-					disabled={loading || !districts.length}
-					filterSort={(a, b) =>
-						(a?.label ?? "").localeCompare(b?.label ?? "")
-					}
-					allowClear
-					optionFilterProp="label"
-					options={districts.map((d) => ({
-						label: d.name,
-						value: d.code,
-					}))}
-				/>
+				<div className="flex-col-w200">
+					<span className="label-input">Chọn xã/phường</span>
+					<Select
+						showSearch
+						placeholder="Select District"
+						size="large"
+						value={selectedDistrict || undefined}
+						onChange={handleDistrictChange}
+						disabled={loading || !districts.length}
+						filterSort={(a, b) =>
+							(a?.label ?? "").localeCompare(b?.label ?? "")
+						}
+						allowClear
+						optionFilterProp="label"
+						options={districts.map((d) => ({
+							label: d.name,
+							value: d.code,
+						}))}
+					/>
+				</div>
 
-				<Input.Search
-					value={searchText}
-					onChange={(e) => setSearchText(e.target.value)}
-					placeholder="Enter hospital, doctor, or location..."
-					allowClear
-					enterButton="Search"
-					size="large"
-					onSearch={handleClinicsSearch}
-					loading={loading}
-					style={{ flex: 2 }}
-				/>
+				<div className="flex-col-fl2">
+					<span className="label-input">
+						Nhập tên phòng khám, từ khóa cần tìm
+					</span>
+					<Input.Search
+						value={searchText}
+						onChange={(e) => setSearchText(e.target.value)}
+						placeholder="Enter hospital, doctor, or location..."
+						allowClear
+						enterButton="Search"
+						size="large"
+						onSearch={handleClinicsSearch}
+						loading={loading}
+					/>
+				</div>
 			</div>
 
 			<div style={{ marginTop: 30 }}>
