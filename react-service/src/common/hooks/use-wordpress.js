@@ -12,10 +12,10 @@ export function useWordPress() {
 		);
 	}, []);
 
-	const apiBase = `${config.restUrl}ai-clinic-search/public/v1`;
+	const apiBase = `${config.restUrl}ai-clinic-search/proxy/v1`;
 
 	/**
-	 * Call API WordPress REST.
+	 * Call API WordPress REST via Proxy.
 	 * @param {string} endpoint - Ex: "/provinces"
 	 * @param {object} options - method, headers, body, query, signal
 	 */
@@ -72,6 +72,7 @@ export function useWordPress() {
 
 				if (!response.ok) {
 					let errorMessage = `API Error: ${response.status}`;
+					let errorCode = null;
 
 					// Try to get error message from response
 					try {
@@ -80,11 +81,20 @@ export function useWordPress() {
 							errorData.message ||
 							errorData.error ||
 							errorMessage;
+						errorCode = errorData.code;
+
+						if (response.status === 429) {
+							errorMessage =
+								"Too many requests. Please try again later.";
+						}
 					} catch {
 						// Response is not JSON, use default message
 					}
 
-					throw new Error(errorMessage);
+					const error = new Error(errorMessage);
+					error.status = response.status;
+					error.code = errorCode;
+					throw error;
 				}
 
 				return response.json();

@@ -134,6 +134,7 @@ if (! class_exists('Ai_Clinic_Search')) :
 				//Fire the plugin logic
 				new Ai_Clinic_Search_Run();
 				new Ai_Clinic_REST_Register();
+				new Ai_Clinic_Proxy_Controller();
 				new AI_Clinic_Search_Shortcode();
 				new Ai_Clinic_Controller_Clinic();
 				new Ai_Clinic_Search_Uninstaller();
@@ -159,6 +160,7 @@ if (! class_exists('Ai_Clinic_Search')) :
 		{
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/class-ai-clinic-search-permissions.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/controllers/class-ai-clinic-search-controller-clinic.php';
+			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/route/class-ai-clinic-search-proxy.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/route/class-ai-clinic-search-rest-register.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/services/class-ai-clinic-search-service-location.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/classes/class-ai-clinic-search-api.php';
