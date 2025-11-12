@@ -1,104 +1,254 @@
-import React, { useState } from "react";
-import { Input, List, Card, Typography, Spin, message } from "antd";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Input, Select, List, Card, Typography, Spin, message } from "antd";
 import { useWordPress } from "@/hooks/use-wordpress";
 
 const { Title } = Typography;
 
 export default function App() {
-  const { config, apiFetch } = useWordPress();
-  const [loading, setLoading] = useState(false);
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
+	const { apiFetch } = useWordPress();
+	const abortControllerRef = useRef(null);
 
-  const handleSearch = async (value) => {
-    if (!value || !value.trim()) {
-      setResults([]);
-      setQuery("");
-      return;
-    }
+	const [searchText, setSearchText] = useState("");
+	const [loading, setLoading] = useState(false);
+	const [clinicsSearch, setClinicsSearch] = useState([]);
 
-    setLoading(true);
-    setQuery(value);
+	const [provinces, setProvinces] = useState([]);
+	const [districts, setDistricts] = useState([]);
+	const [selectedProvince, setSelectedProvince] = useState("");
+	const [selectedDistrict, setSelectedDistrict] = useState("");
 
-    try {
-      // Gọi API WordPress thông qua apiFetch helper
-      const data = await apiFetch(
-        `wp/v2/posts?search=${encodeURIComponent(value)}&per_page=20`
-      );
-      setResults(data);
-    } catch (error) {
-      console.error("Search error:", error);
-      message.error("An error occurred while searching. Please try again.");
-      setResults([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+	const fetchProvinces = useCallback(
+		async (search = "") => {
+			const data = await apiFetch("/provinces", {
+				query: search ? { search } : {},
+			});
+			setProvinces(data);
+		},
+		[apiFetch]
+	);
 
-  return (
-    <div style={{ margin: "40px auto", padding: "0 20px" }}>
-      <Title level={1} style={{ textAlign: "center" }}>
-        🔍 AI Search (Ant Design)
-      </Title>
+	const fetchDistricts = useCallback(
+		async (search = "") => {
+			const data = await apiFetch("/districts", {
+				query: {
+					...(selectedProvince
+						? { province_code: selectedProvince }
+						: {}),
+					...(search ? { search } : {}),
+				},
+			});
+			setDistricts(data);
+		},
+		[apiFetch, selectedProvince]
+	);
 
-      <Input.Search
-        placeholder="Enter the name of a hospital, doctor, or location..."
-        allowClear
-        enterButton="Search"
-        size="large"
-        onSearch={handleSearch}
-        loading={loading}
-      />
+	const fetchClinicsSearch = useCallback(
+		async (search = "") => {
+			if (abortControllerRef.current) {
+				abortControllerRef.current.abort();
+			}
 
-      <div style={{ marginTop: 30 }}>
-        {loading ? (
-          <Spin
-            size="large"
-            style={{ display: "block", margin: "50px auto" }}
-          />
-        ) : results.length > 0 ? (
-          <>
-            <Typography.Text
-              type="secondary"
-              style={{ marginBottom: 16, display: "block" }}
-            >
-              Found {results.length} results for "{query}"
-            </Typography.Text>
-            <List
-              grid={{ gutter: 16, column: 1 }}
-              dataSource={results}
-              renderItem={(item) => (
-                <List.Item>
-                  <Card
-                    title={
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        dangerouslySetInnerHTML={{
-                          __html: item.title.rendered,
-                        }}
-                      />
-                    }
-                    hoverable
-                  >
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: item.excerpt.rendered,
-                      }}
-                    />
-                  </Card>
-                </List.Item>
-              )}
-            />
-          </>
-        ) : query ? (
-          <Card>
-            <Typography.Text type="secondary">
-              No results found for "{query}"
-            </Typography.Text>
-          </Card>
-        ) : null}
-      </div>
-    </div>
-  );
+			abortControllerRef.current = new AbortController();
+
+			try {
+				const data = await apiFetch("/clinics/search", {
+					query: {
+						...(search ? { search } : {}),
+						...(selectedProvince
+							? { province: selectedProvince }
+							: {}),
+						...(selectedDistrict
+							? { district: selectedDistrict }
+							: {}),
+					},
+					signal: abortControllerRef.current.signal,
+				});
+				setClinicsSearch(data);
+			} catch (error) {
+				if (error.name !== "AbortError") {
+					throw error;
+				}
+			}
+		},
+		[apiFetch, selectedProvince, selectedDistrict]
+	);
+
+	useEffect(() => {
+		fetchProvinces().catch((e) => message.error(e?.message));
+	}, [fetchProvinces]);
+
+	useEffect(() => {
+		if (!selectedProvince) {
+			setDistricts([]);
+			setSelectedDistrict("");
+			return;
+		}
+
+		fetchDistricts().catch((e) => message.error(e?.message));
+	}, [selectedProvince, fetchDistricts]);
+
+	useEffect(() => {
+		return () => {
+			if (abortControllerRef.current) {
+				abortControllerRef.current.abort();
+			}
+		};
+	}, []);
+
+	const handleClinicsSearch = async (search) => {
+		setSearchText(search);
+
+		const isEmptySearch = !search?.trim();
+		const hasFilters = selectedProvince || selectedDistrict;
+
+		if (isEmptySearch && !hasFilters) {
+			setClinicsSearch([]);
+			return;
+		}
+
+		setLoading(true);
+
+		try {
+			await fetchClinicsSearch(search);
+		} catch (e) {
+			if (e?.name !== "AbortError") {
+				message.error(e?.message);
+				setClinicsSearch([]);
+			}
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleProvinceChange = (value) => {
+		setSelectedProvince(value);
+		setSelectedDistrict("");
+		setDistricts([]);
+		setSearchText("");
+	};
+
+	const handleDistrictChange = (value) => {
+		setSelectedDistrict(value);
+		setSearchText("");
+	};
+
+	return (
+		<div style={{ margin: "40px auto" }}>
+			<Title level={2} style={{ textAlign: "center" }}>
+				🔍 AI Clinic Search
+			</Title>
+
+			<div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
+				<div className="flex-col-w200">
+					<span className="label-input">Chọn tỉnh/thành phố</span>
+					<Select
+						showSearch
+						placeholder="Select Province"
+						size="large"
+						value={selectedProvince || undefined}
+						onChange={handleProvinceChange}
+						filterSort={(a, b) =>
+							(a?.label ?? "").localeCompare(b?.label ?? "")
+						}
+						allowClear
+						optionFilterProp="label"
+						options={provinces.map((p) => ({
+							label: p.name,
+							value: p.code,
+						}))}
+						disabled={loading}
+					/>
+				</div>
+
+				<div className="flex-col-w200">
+					<span className="label-input">Chọn xã/phường</span>
+					<Select
+						showSearch
+						placeholder="Select District"
+						size="large"
+						value={selectedDistrict || undefined}
+						onChange={handleDistrictChange}
+						disabled={loading || !districts.length}
+						filterSort={(a, b) =>
+							(a?.label ?? "").localeCompare(b?.label ?? "")
+						}
+						allowClear
+						optionFilterProp="label"
+						options={districts.map((d) => ({
+							label: d.name,
+							value: d.code,
+						}))}
+					/>
+				</div>
+
+				<div className="flex-col-fl2">
+					<span className="label-input">
+						Nhập tên phòng khám, từ khóa cần tìm
+					</span>
+					<Input.Search
+						value={searchText}
+						onChange={(e) => setSearchText(e.target.value)}
+						placeholder="Enter hospital, doctor, or location..."
+						allowClear
+						enterButton="Search"
+						size="large"
+						onSearch={handleClinicsSearch}
+						loading={loading}
+					/>
+				</div>
+			</div>
+
+			<div style={{ marginTop: 30 }}>
+				{loading ? (
+					<Spin
+						size="large"
+						style={{ display: "block", margin: "50px auto" }}
+					/>
+				) : clinicsSearch.length > 0 ? (
+					<>
+						<Typography.Text
+							type="secondary"
+							style={{ marginBottom: 16, display: "block" }}
+						>
+							Found {clinicsSearch.length} results
+							{searchText && ` for "${searchText}"`}
+						</Typography.Text>
+						<List
+							grid={{ gutter: 16, column: 1 }}
+							dataSource={clinicsSearch}
+							renderItem={(item) => (
+								<List.Item>
+									<Card
+										title={
+											<a
+												href={item.link}
+												target="_blank"
+												rel="noopener noreferrer"
+												dangerouslySetInnerHTML={{
+													__html: item.title.rendered,
+												}}
+											/>
+										}
+										hoverable
+									>
+										<div
+											dangerouslySetInnerHTML={{
+												__html: item.excerpt.rendered,
+											}}
+										/>
+									</Card>
+								</List.Item>
+							)}
+						/>
+					</>
+				) : (
+					<Card>
+						<Typography.Text type="secondary">
+							No results found.
+						</Typography.Text>
+					</Card>
+				)}
+			</div>
+		</div>
+	);
 }
