@@ -19,6 +19,7 @@ class Ai_Clinic_REST_Register
     const VERSION   = 'v1';
     const GROUP_PUBLIC = 'public';
     const GROUP_ADMIN  = 'admin';
+    const GROUP_PROXY  = 'proxy';
 
     public function __construct()
     {

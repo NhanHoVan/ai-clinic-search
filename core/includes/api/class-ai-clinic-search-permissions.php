@@ -46,4 +46,25 @@ class Ai_Clinic_Permissions
     {
         return current_user_can('manage_options');
     }
+
+    /**
+     * Allow only requests from proxies (with valid X-APP-KEY)
+     */
+    public static function check_internal_api_key(WP_REST_Request $request)
+    {
+        $api_key = $request->get_header('X-APP-KEY');
+        $valid_key = defined('AI_CLINIC_SEARCH_INTERNAL_API_KEY') 
+            ? AI_CLINIC_SEARCH_INTERNAL_API_KEY 
+            : get_option('ai_clinic_search_internal_api_key', '');
+
+        if (empty($valid_key) || $api_key !== $valid_key) {
+            return new WP_Error(
+                'invalid_api_key',
+                'Invalid or missing API key',
+                ['status' => 401]
+            );
+        }
+
+        return true;
+    }
 }

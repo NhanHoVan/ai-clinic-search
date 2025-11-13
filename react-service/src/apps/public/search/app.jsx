@@ -20,30 +20,37 @@ export default function App() {
 	const fetchProvinces = useCallback(
 		async (search = "") => {
 			const data = await apiFetch("/provinces", {
-				query: search ? { search } : {},
+				method: "GET",
+				params: search ? { search } : {},
 			});
-			setProvinces(data);
+			setProvinces(Array.isArray(data) ? data : []);
 		},
 		[apiFetch]
 	);
 
 	const fetchDistricts = useCallback(
 		async (search = "") => {
+			if (!selectedProvince) {
+				throw new Error("Missing required parameters");
+			}
+
 			const data = await apiFetch("/districts", {
-				query: {
-					...(selectedProvince
-						? { province_code: selectedProvince }
-						: {}),
+				body: {
+					province_code: selectedProvince,
 					...(search ? { search } : {}),
 				},
 			});
-			setDistricts(data);
+			setDistricts(Array.isArray(data) ? data : []);
 		},
 		[apiFetch, selectedProvince]
 	);
 
 	const fetchClinicsSearch = useCallback(
 		async (search = "") => {
+			if (!search || !selectedProvince || !selectedDistrict) {
+				throw new Error("Missing required parameters");
+			}
+
 			if (abortControllerRef.current) {
 				abortControllerRef.current.abort();
 			}
@@ -52,14 +59,10 @@ export default function App() {
 
 			try {
 				const data = await apiFetch("/clinics/search", {
-					query: {
-						...(search ? { search } : {}),
-						...(selectedProvince
-							? { province: selectedProvince }
-							: {}),
-						...(selectedDistrict
-							? { district: selectedDistrict }
-							: {}),
+					body: {
+						search,
+						province: selectedProvince,
+						district: selectedDistrict,
 					},
 					signal: abortControllerRef.current.signal,
 				});

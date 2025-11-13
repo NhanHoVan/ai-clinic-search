@@ -18,35 +18,35 @@ class Ai_Clinic_REST_Public
         register_rest_route($base, '/provinces', [
             'methods' => 'GET',
             'callback' => [$clinic_controller, 'get_provinces'],
-            'permission_callback' => [Ai_Clinic_Permissions::class, 'aiclinic_public_access'],
+            'permission_callback' => [Ai_Clinic_Permissions::class, 'check_internal_api_key'],
         ]);
 
         // get_districts
         register_rest_route($base, '/districts', [
             'methods' => 'GET',
             'callback' => [$clinic_controller, 'get_districts'],
-            'permission_callback' => [Ai_Clinic_Permissions::class, 'aiclinic_public_access'],
+            'permission_callback' => [Ai_Clinic_Permissions::class, 'check_internal_api_key'],
         ]);
 
         // get_specialties
         register_rest_route($base, '/specialties', [
             'methods' => 'GET',
             'callback' => [$clinic_controller, 'get_specialties'],
-            'permission_callback' => [Ai_Clinic_Permissions::class, 'aiclinic_public_access'],
+            'permission_callback' => [Ai_Clinic_Permissions::class, 'check_internal_api_key'],
         ]);
 
         // search_clinics with AI search
         register_rest_route($base, '/clinics/search', [
             'methods' => 'POST',
             'callback' => [$clinic_controller, 'search_clinics'],
-            'permission_callback' => [Ai_Clinic_Permissions::class, 'aiclinic_public_access'],
+            'permission_callback' => [Ai_Clinic_Permissions::class, 'check_internal_api_key'],
         ]);
 
         // get_clinics by key
         register_rest_route($base, '/clinics', [
             'methods' => 'GET',
             'callback' => [$clinic_controller, 'get_clinics'],
-            'permission_callback' => [Ai_Clinic_Permissions::class, 'aiclinic_public_access'],
+            'permission_callback' => [Ai_Clinic_Permissions::class, 'check_internal_api_key'],
         ]);
     }
 }
