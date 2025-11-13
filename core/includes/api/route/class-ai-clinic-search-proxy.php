@@ -38,7 +38,7 @@ class Ai_Clinic_Proxy_Controller
         ]);
 
         register_rest_route($namespace, '/districts', [
-            'methods' => 'GET',
+            'methods' => 'POST',
             'callback' => [$this, 'get_districts'],
             'permission_callback' => '__return_true',
         ]);
@@ -50,7 +50,7 @@ class Ai_Clinic_Proxy_Controller
         ]);
 
         register_rest_route($namespace, '/clinics/search', [
-            'methods' => 'GET',
+            'methods' => 'POST',
             'callback' => [$this, 'search_clinics'],
             'permission_callback' => '__return_true',
         ]);
@@ -265,7 +265,13 @@ class Ai_Clinic_Proxy_Controller
     public function get_provinces(WP_REST_Request $request)
     {
         $search = $request->get_param('search');
-        $result = $this->proxy_get('/provinces', ['search' => $search]);
+        $params = [];
+
+        if (!empty($search)) {
+            $params['search'] = sanitize_text_field($search);
+        }
+
+        $result = $this->proxy_get('/provinces', $params);
 
         return rest_ensure_response($result);
     }
@@ -275,12 +281,27 @@ class Ai_Clinic_Proxy_Controller
      */
     public function get_districts(WP_REST_Request $request)
     {
-        $province_code = $request->get_param('province_code');
-        $search = $request->get_param('search');
+        $body = $request->get_json_params();
 
-        $params = [];
-        if ($province_code) $params['province_code'] = $province_code;
-        if ($search) $params['search'] = $search;
+        if (empty($body)) {
+            return new WP_Error('invalid_request', 'Request body is required', ['status' => 400]);
+        }
+
+        if (empty($body['province_code'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "province_code" is required',
+                ['status' => 400]
+            );
+        }
+
+        $params = [
+            'province_code' => sanitize_text_field($body['province_code'])
+        ];
+
+        if (isset($body['search']) && !empty($body['search'])) {
+            $params['search'] = sanitize_text_field($body['search']);
+        }
 
         $result = $this->proxy_get('/districts', $params);
 
@@ -293,7 +314,13 @@ class Ai_Clinic_Proxy_Controller
     public function get_specialties(WP_REST_Request $request)
     {
         $search = $request->get_param('search');
-        $result = $this->proxy_get('/specialties', ['search' => $search]);
+        $params = [];
+
+        if (!empty($search)) {
+            $params['search'] = sanitize_text_field($search);
+        }
+
+        $result = $this->proxy_get('/specialties', $params);
 
         return rest_ensure_response($result);
     }
@@ -303,34 +330,41 @@ class Ai_Clinic_Proxy_Controller
      */
     public function search_clinics(WP_REST_Request $request)
     {
-        $body = $request->get_json_params();
+        $body_request = $request->get_json_params();
 
-        if (empty($body)) {
+        if (empty($body_request)) {
             return new WP_Error('invalid_request', 'Request body is required', ['status' => 400]);
         }
 
-        if (empty($body['query']) && empty($body['filters'])) {
+        if (empty($body_request['search'])) {
             return new WP_Error(
                 'invalid_request',
-                'Either "query" or "filters" must be provided',
+                'Field "search" is required',
                 ['status' => 400]
             );
         }
 
-        if (isset($body['query'])) {
-            $body['query'] = sanitize_text_field($body['query']);
+        if (empty($body_request['province'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "province" is required',
+                ['status' => 400]
+            );
         }
 
-        if (isset($body['filters']) && is_array($body['filters'])) {
-            $body['filters'] = $this->sanitize_filters($body['filters']);
+        if (empty($body_request['district'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "district" is required',
+                ['status' => 400]
+            );
         }
 
-        if (isset($body['page'])) {
-            $body['page'] = max(1, intval($body['page']));
-        }
-        if (isset($body['per_page'])) {
-            $body['per_page'] = max(1, min(100, intval($body['per_page'])));
-        }
+        $body = [
+            'search' => sanitize_text_field($body_request['search']),
+            'province' => sanitize_text_field($body_request['province']),
+            'district' => sanitize_text_field($body_request['district']),
+        ];
 
         $headers = [
             'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
@@ -339,28 +373,6 @@ class Ai_Clinic_Proxy_Controller
         $result = $this->proxy_request('POST', '/clinics/search', $body, $headers);
 
         return rest_ensure_response($result);
-    }
-
-    /**
-     * Sanitize search filters
-     */
-    private function sanitize_filters($filters)
-    {
-        $sanitized = [];
-
-        if (isset($filters['province_code'])) {
-            $sanitized['province_code'] = sanitize_text_field($filters['province_code']);
-        }
-
-        if (isset($filters['district_code'])) {
-            $sanitized['district_code'] = sanitize_text_field($filters['district_code']);
-        }
-
-        if (isset($filters['specialty_ids']) && is_array($filters['specialty_ids'])) {
-            $sanitized['specialty_ids'] = array_map('intval', $filters['specialty_ids']);
-        }
-
-        return $sanitized;
     }
 
     /**

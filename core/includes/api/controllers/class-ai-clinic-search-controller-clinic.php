@@ -27,12 +27,22 @@ class Ai_Clinic_Controller_Clinic
      */
     public function search_clinics($request)
     {
-        $params = $request->get_json_params();
-        $keyword = sanitize_text_field($params['keyword'] ?? '');
-        $province = sanitize_text_field($params['province'] ?? '');
+        $body = $request->get_json_params();
 
-        if (empty($keyword)) {
-            return new WP_REST_Response(['error' => 'Keyword is required'], 400);
+        $search   = sanitize_text_field($body['search'] ?? '');
+        $province = sanitize_text_field($body['province'] ?? '');
+        $district = sanitize_text_field($body['district'] ?? '');
+
+        if (empty($search)) {
+            return new WP_REST_Response(['error' => 'Field "search" is required'], 400);
+        }
+
+        if (empty($province)) {
+            return new WP_REST_Response(['error' => 'Field "province" is required'], 400);
+        }
+
+        if (empty($district)) {
+            return new WP_REST_Response(['error' => 'Field "district" is required'], 400);
         }
 
         // 1️⃣ Gọi Google Search API (tạm thời mock)
@@ -43,7 +53,7 @@ class Ai_Clinic_Controller_Clinic
 
         return new WP_REST_Response([
             'success' => true,
-            'keyword' => $keyword,
+            'keyword' => $search,
             'clinics' => $results,
         ], 200);
     }
