@@ -1,11 +1,13 @@
 <?php
 
 /**
- * Google Places API Service
- * 
+ * Class Ai_Clinic_Service_Google_Places
+ *
  * Handles Google Places API requests for location-based queries.
+ *
+ * @package AICLINIC
  */
-class GooglePlacesService
+class Ai_Clinic_Service_Google_Places
 {
     /**
      * @var Ai_Clinic_Search_DB Database instance
