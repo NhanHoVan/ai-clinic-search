@@ -63,7 +63,7 @@ class Ai_Clinic_Service_Google_Search
         $this->cx = $settings['google_search_cx'];
         $this->api_url = !empty($settings['google_search_api_url'])
             ? $settings['google_search_api_url']
-            : 'https://www.googleapis.com/customsearch/v1';
+            : AICLINIC_GOOGLE_SEARCH_API_URL;
     }
 
     /**
@@ -82,8 +82,11 @@ class Ai_Clinic_Service_Google_Search
             'key' => $this->api_key,
             'cx' => $this->cx,
             'q' => $query,
-            'num' => $params['num'] ?? 10,
-            'start' => $params['start'] ?? 1
+            'gl' => 'vn',
+            'hl' => 'vi',
+            'safe' => 'active',
+            'start' => $params['start'] ?? 1,
+            'num' => $params['num'] ?? 10
         ];
 
         $query_params = array_merge($default_params, $params);
