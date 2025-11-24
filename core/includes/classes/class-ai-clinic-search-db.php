@@ -127,9 +127,10 @@ class Ai_Clinic_Search_DB
      *
      * @param array $data {
      *     @type string $name           Clinic name (required)
+     *     @type string $place_id      ID of places (required)
      *     @type string $address        Full address
-     *     @type string $province       Province/city name
-     *     @type string $district       District/area name
+     *     @type string $province       Province/city code
+     *     @type string $district       District/area code
      *     @type float  $lat            Latitude
      *     @type float  $lng            Longitude
      *     @type string $phone          Contact phone
@@ -145,6 +146,7 @@ class Ai_Clinic_Search_DB
     {
         $data_to_insert = [
             'name'          => sanitize_text_field($data['name']),
+            'place_id'     => sanitize_text_field($data['place_id']),
             'address'       => sanitize_textarea_field($data['address'] ?? ''),
             'province'      => sanitize_text_field($data['province'] ?? ''),
             'district'      => sanitize_text_field($data['district'] ?? ''),
@@ -173,8 +175,8 @@ class Ai_Clinic_Search_DB
      *
      * @param array $args {
      *     @type string $search         Search keyword (searches in name, address)
-     *     @type string $province       Filter by province
-     *     @type string $district       Filter by district
+     *     @type string $province       Filter by province code
+     *     @type string $district       Filter by district code
      *     @type string $verify_status  Filter by verification status
      *     @type string $is_active      Filter by active status
      *     @type int    $limit          Records per page (default: 10)
@@ -289,6 +291,10 @@ class Ai_Clinic_Search_DB
 
         if (isset($data['name'])) {
             $data_to_update['name'] = sanitize_text_field($data['name']);
+        }
+
+        if (isset($data['place_id'])) {
+            $data_to_update['place_id'] = sanitize_text_field($data['place_id']);
         }
 
         if (isset($data['address'])) {
@@ -411,16 +417,31 @@ class Ai_Clinic_Search_DB
     }
 
     /**
+     * Get clinics by place_id.
+     *
+     * @param string $place_id     ID of Places.
+     * @param int    $limit         Number of records (default: 10).
+     * @return array Array of clinic records.
+     */
+    public function aiclinic_get_clinics_by_place_id($place_id, $limit = 1)
+    {
+        return $this->helper->database->aiclinic_get_all('aiclinic_clinics', [
+            'filters' => ['place_id' => sanitize_text_field($place_id)],
+            'limit'   => absint($limit)
+        ]) ?: [];
+    }
+
+    /**
      * Get clinics by province.
      *
-     * @param string $province Province name.
+     * @param string $province Province code.
      * @param int    $limit    Number of records (default: 10).
      * @return array Array of clinic records.
      */
-    public function aiclinic_get_clinics_by_province($province, $limit = 10)
+    public function aiclinic_get_clinics_by_province($province_code, $limit = 10)
     {
         return $this->helper->database->aiclinic_get_all('aiclinic_clinics', [
-            'filters' => ['province' => sanitize_text_field($province)],
+            'filters' => ['province' => sanitize_text_field($province_code)],
             'limit'   => absint($limit)
         ]) ?: [];
     }

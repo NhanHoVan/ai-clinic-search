@@ -32,10 +32,11 @@ CREATE TABLE IF NOT EXISTS wp_aiclinic_plugin_error_logs (
 -- Table for storing clinic information
 CREATE TABLE IF NOT EXISTS wp_aiclinic_clinics (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'Unique identifier for the clinic',
+    place_id VARCHAR(255) COMMENT 'Google Places place_id',
     name VARCHAR(255) NOT NULL COMMENT 'Clinic name',
     address TEXT COMMENT 'Full clinic address',
-    province VARCHAR(100) COMMENT 'Province or city name',
-    district VARCHAR(100) COMMENT 'District or area name',
+    province VARCHAR(100) COMMENT 'Province or city code',
+    district VARCHAR(100) COMMENT 'District or area code',
     lat DECIMAL(10,7) COMMENT 'Latitude of the clinic location',
     lng DECIMAL(10,7) COMMENT 'Longitude of the clinic location',
     phone VARCHAR(50) COMMENT 'Contact phone number',

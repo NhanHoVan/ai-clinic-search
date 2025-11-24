@@ -62,6 +62,22 @@ class Ai_Clinic_Service_Google_Places
      */
     public function textSearch($query)
     {
+        // TODO remove return dymmy data
+        $schema_file = CLINIC_SEARCH_PLUGIN_DIR . 'schemas/dummy_clinics.json';
+        if (!file_exists($schema_file)) {
+            throw new Exception('Schema file not found: dummy_clinics.json');
+        }
+        $json_schema = json_decode(file_get_contents($schema_file), true);
+        if (!$json_schema) {
+            throw new Exception('Invalid JSON schema file: dummy_clinics.json');
+        }
+
+        return [
+            'status'  => 'OK',
+            'results' => $json_schema
+        ];
+        // End dummy data
+
         $this->loadSettings();
 
         $endpoint = $this->api_url . '/places:searchText';
@@ -203,15 +219,12 @@ class Ai_Clinic_Service_Google_Places
             'name'     => $place['displayName']['text'] ?? '',
             'address'  => $place['formattedAddress'] ?? '',
             'phone'    => $place['internationalPhoneNumber'] ?? null,
-            'website'  => $place['website'] ?? null,
+            'website'  => $place['websiteUri'] ?? null,
             'rating'   => $place['rating'] ?? null,
-            'user_ratings_total' => $place['userRatingCount'] ?? 0,
-            'location' => [
-                'lat' => $place['location']['latitude'] ?? null,
-                'lng' => $place['location']['longitude'] ?? null
-            ],
+            'user_rating_count' => $place['userRatingCount'] ?? 0,
+            'lat' => $place['location']['latitude'] ?? null,
+            'lng' => $place['location']['longitude'] ?? null,
             'description' => $place['editorialSummary']['text'] ?? null,
-            'types'       => $place['types'] ?? []
         ];
     }
 }

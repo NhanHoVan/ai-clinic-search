@@ -112,4 +112,60 @@ class Ai_Clinic_Service_Location
 
         return [];
     }
+
+    /**
+     * Get province name by province code.
+     *
+     * @param string|int $province_code
+     * @return string|null
+     */
+    public function get_province_name_by_code($province_code)
+    {
+        $data = $this->load_data();
+        if (!$data) {
+            return null;
+        }
+
+        foreach ($data as $province) {
+            if ($province['code'] === $province_code) {
+                return $province['name'] ?? null;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get district/ward name by its code within a province.
+     *
+     * @param string|int $province_code
+     * @param string|int $district_code
+     * @return string|null
+     */
+    public function get_district_name_by_code($province_code, $district_code)
+    {
+        $data = $this->load_data();
+        if (!$data) {
+            return null;
+        }
+
+        foreach ($data as $province) {
+            if ($province['code'] === $province_code) {
+
+                if (empty($province['wards'])) {
+                    return null;
+                }
+
+                foreach ($province['wards'] as $ward) {
+                    if ($ward['code'] === $district_code) {
+                        return $ward['name'] ?? null;
+                    }
+                }
+
+                return null;
+            }
+        }
+
+        return null;
+    }
 }

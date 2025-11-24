@@ -26,9 +26,9 @@ class Ai_Clinic_Controller_Clinic
     private $database;
 
     /**
-     * @var Ai_Clinic_Service_Google_Search GoogleSearch instance
+     * @var Ai_Clinic_Service_Google_Places GooglePlaces instance
      */
-    private $google_search;
+    private $google_places;
 
     /**
      * @var Ai_Clinic_Service_OpenAI OpenAI instance
@@ -39,7 +39,7 @@ class Ai_Clinic_Controller_Clinic
     {
         $this->location_service = new Ai_Clinic_Service_Location();
         $this->database = new Ai_Clinic_Search_DB();
-        $this->google_search = new Ai_Clinic_Service_Google_Search();
+        $this->google_places = new Ai_Clinic_Service_Google_Places();
         $this->openai = new Ai_Clinic_Service_OpenAI();
     }
 
@@ -99,30 +99,37 @@ class Ai_Clinic_Controller_Clinic
         $body = $request->get_json_params();
 
         $search   = sanitize_text_field($body['search'] ?? '');
-        $province = sanitize_text_field($body['province'] ?? '');
-        $district = sanitize_text_field($body['district'] ?? '');
+        $province_code = sanitize_text_field($body['province'] ?? '');
+        $district_code = sanitize_text_field($body['district'] ?? '');
 
         if (empty($search)) {
             return new WP_REST_Response(['error' => 'Field "search" is required'], 400);
         }
 
-        if (empty($province)) {
+        if (empty($province_code)) {
             return new WP_REST_Response(['error' => 'Field "province" is required'], 400);
         }
 
-        if (empty($district)) {
+        if (empty($district_code)) {
             return new WP_REST_Response(['error' => 'Field "district" is required'], 400);
         }
 
+        $province_name = $this->location_service->get_province_name_by_code($province_code);
+        $district_name = $this->location_service->get_district_name_by_code($province_code, $district_code);
+
         try {
-            $search_query = sprintf('%s %s %s phòng khám', $search, $district, $province);
-            $google_results = $this->google_search->search($search_query, [
-                'num' => 10,
-                'gl' => 'vn',
-                'hl' => 'vi'
+            $search_query = trim(sprintf(
+                '%s tại %s, %s',
+                $search,
+                $district_name,
+                $province_name
+            ));
+            $places_results = $this->google_places->textSearch($search_query, [
+                'region' => 'vn',
+                'language' => 'vi'
             ]);
 
-            if (empty($google_results['items'])) {
+            if (empty($places_results['results'])) {
                 return new WP_REST_Response([
                     'success' => false,
                     'message' => 'No results found from Google Search',
@@ -131,62 +138,14 @@ class Ai_Clinic_Controller_Clinic
                 ], 200);
             }
 
-            $google_data = json_encode($google_results['items'], JSON_UNESCAPED_UNICODE);
-
-            $messages = [
-                [
-                    'role' => 'system',
-                    'content' => 'You are a medical data extraction assistant. Extract clinic information from search results.'
-                ],
-                [
-                    'role' => 'user',
-                    'content' => sprintf(
-                        'Extract clinic information from these Google search results. Province must be "%s" and district must be "%s". If phone/email not found, use empty string. Search results: %s',
-                        $province,
-                        $district,
-                        $google_data
-                    )
-                ]
-            ];
-
-            $openai_response = $this->openai->chatCompletionStructured(
-                $messages,
-                'openai-clinic-extraction-schema',
-                [
-                    'model' => 'gpt-4o-mini',
-                    'temperature' => 0.3,
-                    'max_tokens' => 2000
-                ]
-            );
-
-            $ai_content = $openai_response['choices'][0]['message']['content'] ?? '';
-            $parsed_data = json_decode($ai_content, true);
-            $clinics_data = $parsed_data['clinics'] ?? [];
-
-            if (!is_array($clinics_data) || empty($clinics_data)) {
-                return new WP_REST_Response([
-                    'success' => true,
-                    'message' => 'No clinics extracted from search results',
-                    'keyword' => $search,
-                    'clinics' => []
-                ], 200);
-            }
-
             $saved_clinics = [];
-
-            foreach ($clinics_data as $clinic) {
+            foreach ($places_results['results'] as $clinic) {
                 if (empty($clinic['name'])) {
                     continue;
                 }
 
                 // Check if clinic already exists
-                $existing = $this->database->aiclinic_get_clinics([
-                    'filters' => [
-                        'name' => $clinic['name'],
-                        'province' => $province,
-                        'district' => $district
-                    ]
-                ]);
+                $existing = $this->database->aiclinic_get_clinics_by_place_id($clinic['place_id']);
 
                 if ($existing) {
                     $saved_clinics[] = $existing;
@@ -196,9 +155,10 @@ class Ai_Clinic_Controller_Clinic
                 // Insert new clinic
                 $clinic_id = $this->database->aiclinic_insert_clinic([
                     'name'          => $clinic['name'],
+                    'place_id'      => $clinic['place_id'],
                     'address'       => $clinic['address'] ?? '',
-                    'province'      => $province,
-                    'district'      => $district,
+                    'province'      => $province_code,
+                    'district'      => $district_code,
                     'lat'           => $clinic['lat'] ?? null,
                     'lng'           => $clinic['lng'] ?? null,
                     'phone'         => $clinic['phone'] ?? '',
