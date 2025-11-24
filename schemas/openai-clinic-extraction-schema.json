@@ -1,0 +1,49 @@
+{
+    "name": "clinic_extraction",
+    "strict": true,
+    "schema": {
+      "type": "object",
+      "properties": {
+        "clinics": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Clinic name"
+              },
+              "address": {
+                "type": "string",
+                "description": "Full address"
+              },
+              "province": {
+                "type": "string",
+                "description": "Province/city name"
+              },
+              "district": {
+                "type": "string",
+                "description": "District/area name"
+              },
+              "phone": {
+                "type": "string",
+                "description": "Contact phone number, empty string if not found"
+              },
+              "email": {
+                "type": "string",
+                "description": "Contact email, empty string if not found"
+              },
+              "description": {
+                "type": "string",
+                "description": "Brief description of the clinic"
+              }
+            },
+            "required": ["name", "address", "province", "district", "phone", "email", "description"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["clinics"],
+      "additionalProperties": false
+    }
+  }

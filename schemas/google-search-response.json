@@ -1,0 +1,12 @@
+{
+    "total_results": "string",
+    "search_time": "float",
+    "items": [
+      {
+        "title": "string",
+        "link": "string",
+        "snippet": "string",
+        "display_link": "string"
+      }
+    ]
+  }

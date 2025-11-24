@@ -15,7 +15,7 @@ class Ai_Clinic_Service_Location
 
     public function __construct()
     {
-        $this->data_file = CLINIC_SEARCH_PLUGIN_DIR . 'data/location.json';
+        $this->data_file = CLINIC_SEARCH_PLUGIN_DIR . 'schemas/location.json';
     }
 
     /**

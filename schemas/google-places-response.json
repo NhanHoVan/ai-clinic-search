@@ -1,0 +1,29 @@
+{
+    "status": "string",
+    "results": [
+      {
+        "place_id": "string",
+        "name": "string",
+        "address": "string",
+        "rating": "float|null",
+        "user_ratings_total": "integer",
+        "location": {
+          "lat": "float",
+          "lng": "float"
+        },
+        "types": ["string"]
+      }
+    ],
+    "result": {
+      "place_id": "string",
+      "name": "string",
+      "address": "string",
+      "rating": "float|null",
+      "user_ratings_total": "integer",
+      "location": {
+        "lat": "float",
+        "lng": "float"
+      },
+      "types": ["string"]
+    }
+  }
