@@ -11,6 +11,7 @@ import {
 	Col,
 	Pagination,
 	Image,
+	Tooltip,
 } from "antd";
 import { CopyOutlined, EyeOutlined } from "@ant-design/icons";
 import { maskPhone, maskEmail, getStatusIcon } from "@/utils/utils";
@@ -199,6 +200,13 @@ export default function App() {
 		message.success(`Đã copy đường dẫn tới phòng khám: ${clinicName}`);
 	};
 
+	const handleDetailClinic = (clinicId) => {
+		// TODO update handle for detail clinic
+		message.success(
+			`Mở trong tab mới tới chi tiết phòng khám có ID: ${clinicId}`
+		);
+	};
+
 	return (
 		<div style={{ margin: "40px auto" }}>
 			<Title level={2} style={{ textAlign: "center" }}>
@@ -350,6 +358,9 @@ export default function App() {
 										<EyeOutlined
 											key="detail"
 											style={{ color: "#4e50cdff" }}
+											onClick={() =>
+												handleDetailClinic(clinic.id)
+											}
 										/>,
 									]}
 									hoverable
@@ -361,7 +372,9 @@ export default function App() {
 												{getStatusIcon(
 													clinic.verify_status
 												)}{" "}
-												{clinic.name}
+												<Tooltip title={clinic.name}>
+													{clinic.name}
+												</Tooltip>
 											</span>
 										}
 										description={
