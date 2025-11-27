@@ -1,16 +1,42 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Input, Select, List, Card, Typography, Spin, message } from "antd";
+import {
+	Input,
+	Select,
+	List,
+	Card,
+	Typography,
+	Spin,
+	message,
+	Row,
+	Col,
+	Pagination,
+	Image,
+	Tooltip,
+	Rate,
+} from "antd";
+import { CopyOutlined, EyeOutlined } from "@ant-design/icons";
+import { maskPhone, maskEmail, getStatusIcon } from "@/utils/utils";
+import { IMAGE_FALLBACK } from "@/utils/image";
 import { useWordPress } from "@/hooks/use-wordpress";
+import { useGeoLocation } from "@/hooks/use-geo-location";
 
 const { Title } = Typography;
+const { Meta } = Card;
 
 export default function App() {
 	const { apiFetch } = useWordPress();
+	const { getRegionName } = useGeoLocation();
 	const abortControllerRef = useRef(null);
 
 	const [searchText, setSearchText] = useState("");
-	const [loading, setLoading] = useState(false);
+	const [loadingSearch, setLoadingSearch] = useState(false);
 	const [clinicsSearch, setClinicsSearch] = useState([]);
+
+	const [page, setPage] = useState(1);
+	const [limit] = useState(8);
+	const [total, setTotal] = useState(0);
+	const [clinicsRefer, setClinicsRefer] = useState([]);
+	const [loadingRefer, setLoadingRefer] = useState(false);
 
 	const [provinces, setProvinces] = useState([]);
 	const [districts, setDistricts] = useState([]);
@@ -76,9 +102,62 @@ export default function App() {
 		[apiFetch, selectedProvince, selectedDistrict]
 	);
 
+	const fetchClinicsRefer = useCallback(
+		async (page = 1) => {
+			const data = await apiFetch("/clinics", {
+				body: {
+					province: selectedProvince,
+					district: selectedDistrict,
+					page,
+					limit,
+				},
+			});
+
+			setClinicsRefer(data.data || []);
+			setTotal(data.total || 0);
+			setPage(data.page || page);
+		},
+		[apiFetch, selectedProvince, selectedDistrict]
+	);
+
+	const handleClinicsRefer = async (page) => {
+		setLoadingRefer(true);
+
+		try {
+			await fetchClinicsRefer(page);
+		} catch (e) {
+			message.error(e?.message);
+		} finally {
+			setLoadingRefer(false);
+		}
+	};
+
+	useEffect(() => {
+		handleClinicsRefer(1);
+	}, [selectedProvince, selectedDistrict]);
+
 	useEffect(() => {
 		fetchProvinces().catch((e) => message.error(e?.message));
 	}, [fetchProvinces]);
+
+	useEffect(() => {
+		if (provinces.length === 0) return;
+
+		async function detect() {
+			const regionName = await getRegionName();
+			if (!regionName) return;
+
+			const found = provinces.find((p) =>
+				p.name.toLowerCase().includes(regionName.toLowerCase())
+			);
+
+			if (found) {
+				setSelectedProvince(found.code);
+			}
+		}
+
+		detect();
+	}, [provinces, getRegionName]);
 
 	useEffect(() => {
 		if (!selectedProvince) {
@@ -109,7 +188,7 @@ export default function App() {
 			return;
 		}
 
-		setLoading(true);
+		setLoadingSearch(true);
 
 		try {
 			await fetchClinicsSearch(search);
@@ -119,7 +198,7 @@ export default function App() {
 				setClinicsSearch([]);
 			}
 		} finally {
-			setLoading(false);
+			setLoadingSearch(false);
 		}
 	};
 
@@ -133,6 +212,18 @@ export default function App() {
 	const handleDistrictChange = (value) => {
 		setSelectedDistrict(value);
 		setSearchText("");
+	};
+
+	const handleClickCopy = (clinicName) => {
+		// TODO update handle for copy clinic infor
+		message.success(`Đã copy đường dẫn tới phòng khám: ${clinicName}`);
+	};
+
+	const handleDetailClinic = (clinicId) => {
+		// TODO update handle for detail clinic
+		message.success(
+			`Mở trong tab mới tới chi tiết phòng khám có ID: ${clinicId}`
+		);
 	};
 
 	return (
@@ -159,7 +250,7 @@ export default function App() {
 							label: p.name,
 							value: p.code,
 						}))}
-						disabled={loading}
+						disabled={loadingSearch}
 					/>
 				</div>
 
@@ -171,7 +262,7 @@ export default function App() {
 						size="large"
 						value={selectedDistrict || undefined}
 						onChange={handleDistrictChange}
-						disabled={loading || !districts.length}
+						disabled={loadingSearch || !districts.length}
 						filterSort={(a, b) =>
 							(a?.label ?? "").localeCompare(b?.label ?? "")
 						}
@@ -196,13 +287,13 @@ export default function App() {
 						enterButton="Search"
 						size="large"
 						onSearch={handleClinicsSearch}
-						loading={loading}
+						loading={loadingSearch}
 					/>
 				</div>
 			</div>
 
 			<div style={{ marginTop: 30 }}>
-				{loading ? (
+				{loadingSearch ? (
 					<Spin
 						size="large"
 						style={{ display: "block", margin: "50px auto" }}
@@ -213,7 +304,7 @@ export default function App() {
 							type="secondary"
 							style={{ marginBottom: 16, display: "block" }}
 						>
-							Found {clinicsSearch.length} results
+							Tìm thấy {clinicsSearch.length} kết quả
 							{searchText && ` for "${searchText}"`}
 						</Typography.Text>
 						<List
@@ -245,13 +336,132 @@ export default function App() {
 						/>
 					</>
 				) : (
-					<Card>
+					<Card loading={loadingSearch}>
 						<Typography.Text type="secondary">
-							No results found.
+							Không tìm thấy thông tin nào!
 						</Typography.Text>
 					</Card>
 				)}
 			</div>
+
+			{clinicsRefer.length > 0 ? (
+				<div style={{ marginTop: 30 }}>
+					<Title
+						level={3}
+						style={{ textAlign: "left", marginBottom: 20 }}
+					>
+						Tham khảo các địa chỉ khác gần bạn:
+					</Title>
+					<Row gutter={[16, 16]}>
+						{clinicsRefer.map((clinic, index) => (
+							<Col key={index} xs={24} sm={12} md={12} lg={6}>
+								<Card
+									cover={
+										<Image
+											style={{ objectFit: "cover" }}
+											height={200}
+											draggable={false}
+											alt={clinic.name}
+											src={clinic.img_cover}
+											fallback={IMAGE_FALLBACK}
+										/>
+									}
+									actions={[
+										<CopyOutlined
+											key="share"
+											style={{ color: "#4ecdc4" }}
+											onClick={() =>
+												handleClickCopy(clinic.name)
+											}
+										/>,
+										<EyeOutlined
+											key="detail"
+											style={{ color: "#4e50cdff" }}
+											onClick={() =>
+												handleDetailClinic(clinic.id)
+											}
+										/>,
+									]}
+									hoverable
+									loading={loadingRefer}
+								>
+									<Meta
+										title={
+											<span>
+												{getStatusIcon(
+													clinic.verify_status
+												)}{" "}
+												<Tooltip title={clinic.name}>
+													{clinic.name}
+												</Tooltip>
+											</span>
+										}
+										description={
+											clinic.description && (
+												<p>
+													{clinic.description.length >
+													80
+														? clinic.description.substring(
+																0,
+																80
+														  ) + "..."
+														: clinic.description}
+												</p>
+											)
+										}
+									/>
+									<p>
+										<strong>Địa chỉ:</strong>{" "}
+										{clinic.address}
+									</p>
+									{clinic.phone && (
+										<p>
+											<strong>Điện thoại:</strong>{" "}
+											{maskPhone(clinic.phone)}
+										</p>
+									)}
+									{clinic.email && (
+										<p>
+											<strong>Email:</strong>{" "}
+											{maskEmail(clinic.email)}
+										</p>
+									)}
+									{clinic.rating && (
+										<p style={{ marginBottom: 8 }}>
+											<Rate
+												disabled
+												allowHalf
+												value={clinic.rating}
+												style={{
+													fontSize: 14,
+													marginRight: 4,
+												}}
+											/>
+											<span
+												style={{
+													fontSize: 13,
+													color: "#888",
+												}}
+											>
+												({clinic.user_rating_count}{" "}
+												reviews)
+											</span>
+										</p>
+									)}
+								</Card>
+							</Col>
+						))}
+					</Row>
+					<Pagination
+						style={{ marginTop: 20 }}
+						align="center"
+						current={page}
+						pageSize={limit}
+						total={total}
+						onChange={(p) => handleClinicsRefer(p)}
+					/>
+				</div>
+			) : null}
 		</div>
 	);
 }
