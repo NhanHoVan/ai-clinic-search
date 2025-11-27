@@ -15,7 +15,12 @@ import {
 	Rate,
 } from "antd";
 import { CopyOutlined, EyeOutlined } from "@ant-design/icons";
-import { maskPhone, maskEmail, getStatusIcon } from "@/utils/utils";
+import {
+	maskPhone,
+	maskEmail,
+	getStatusIcon,
+	normalizeText,
+} from "@/utils/utils";
 import { IMAGE_FALLBACK } from "@/utils/image";
 import { useWordPress } from "@/hooks/use-wordpress";
 import { useGeoLocation } from "@/hooks/use-geo-location";
@@ -147,8 +152,10 @@ export default function App() {
 			const regionName = await getRegionName();
 			if (!regionName) return;
 
+			const normRegion = normalizeText(regionName);
+
 			const found = provinces.find((p) =>
-				p.name.toLowerCase().includes(regionName.toLowerCase())
+				normalizeText(p.name).includes(normRegion)
 			);
 
 			if (found) {
