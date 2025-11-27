@@ -118,7 +118,7 @@ export default function App() {
 				},
 			});
 
-			setClinicsRefer(data.data || []);
+			setClinicsRefer(data.clinics || []);
 			setTotal(data.total || 0);
 			setPage(data.page || page);
 		},
@@ -146,7 +146,7 @@ export default function App() {
 	}, [fetchProvinces]);
 
 	useEffect(() => {
-		if (provinces.length === 0) return;
+		if (!provinces.length || selectedProvince) return;
 
 		async function detect() {
 			const regionName = await getRegionName();
