@@ -12,19 +12,20 @@ import {
 	Pagination,
 	Image,
 	Tooltip,
+	Rate,
 } from "antd";
 import { CopyOutlined, EyeOutlined } from "@ant-design/icons";
 import { maskPhone, maskEmail, getStatusIcon } from "@/utils/utils";
 import { IMAGE_FALLBACK } from "@/utils/image";
 import { useWordPress } from "@/hooks/use-wordpress";
-
-// import clinics from "./dummy_clinics.json";
+import { useGeoLocation } from "@/hooks/use-geo-location";
 
 const { Title } = Typography;
 const { Meta } = Card;
 
 export default function App() {
 	const { apiFetch } = useWordPress();
+	const { getRegionName } = useGeoLocation();
 	const abortControllerRef = useRef(null);
 
 	const [searchText, setSearchText] = useState("");
@@ -132,13 +133,31 @@ export default function App() {
 	};
 
 	useEffect(() => {
-		// setClinicsRefer(clinics);
 		handleClinicsRefer(1);
 	}, [selectedProvince, selectedDistrict]);
 
 	useEffect(() => {
 		fetchProvinces().catch((e) => message.error(e?.message));
 	}, [fetchProvinces]);
+
+	useEffect(() => {
+		if (provinces.length === 0) return;
+
+		async function detect() {
+			const regionName = await getRegionName();
+			if (!regionName) return;
+
+			const found = provinces.find((p) =>
+				p.name.toLowerCase().includes(regionName.toLowerCase())
+			);
+
+			if (found) {
+				setSelectedProvince(found.code);
+			}
+		}
+
+		detect();
+	}, [provinces, getRegionName]);
 
 	useEffect(() => {
 		if (!selectedProvince) {
@@ -379,7 +398,15 @@ export default function App() {
 										}
 										description={
 											clinic.description && (
-												<p>{clinic.description}</p>
+												<p>
+													{clinic.description.length >
+													80
+														? clinic.description.substring(
+																0,
+																80
+														  ) + "..."
+														: clinic.description}
+												</p>
 											)
 										}
 									/>
@@ -397,6 +424,28 @@ export default function App() {
 										<p>
 											<strong>Email:</strong>{" "}
 											{maskEmail(clinic.email)}
+										</p>
+									)}
+									{clinic.rating && (
+										<p style={{ marginBottom: 8 }}>
+											<Rate
+												disabled
+												allowHalf
+												value={clinic.rating}
+												style={{
+													fontSize: 14,
+													marginRight: 4,
+												}}
+											/>
+											<span
+												style={{
+													fontSize: 13,
+													color: "#888",
+												}}
+											>
+												({clinic.user_rating_count}{" "}
+												reviews)
+											</span>
 										</p>
 									)}
 								</Card>
