@@ -42,10 +42,10 @@ class Ai_Clinic_REST_Public
             'permission_callback' => [Ai_Clinic_Permissions::class, 'check_internal_api_key'],
         ]);
 
-        // get_clinics by key
+        // get_refer_clinics
         register_rest_route($base, '/clinics', [
-            'methods' => 'GET',
-            'callback' => [$clinic_controller, 'get_clinics'],
+            'methods' => 'POST',
+            'callback' => [$clinic_controller, 'get_refer_clinics'],
             'permission_callback' => [Ai_Clinic_Permissions::class, 'check_internal_api_key'],
         ]);
     }
