@@ -25,12 +25,16 @@
                 "type": "string",
                 "description": "Contact email, empty string if not found"
               },
+              "website": {
+                "type": "string",
+                "description": "Link website of clinic, empty string if not found"
+              },
               "description": {
                 "type": "string",
                 "description": "Brief description of the clinic"
               }
             },
-            "required": ["name", "address", "phone", "email", "description"],
+            "required": ["name", "address", "phone", "email", "website", "description"],
             "additionalProperties": false
           }
         }

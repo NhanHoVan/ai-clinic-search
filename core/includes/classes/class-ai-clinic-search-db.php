@@ -135,6 +135,7 @@ class Ai_Clinic_Search_DB
      *     @type float  $lng            Longitude
      *     @type string $phone          Contact phone
      *     @type string $email          Contact email
+     *     @type string $website        Website
      *     @type string $description    Clinic description
      *     @type string $verify_status  Verification status (AI_DETECTED|ADMIN_VERIFIED|OWNER_VERIFIED)
      *     @type string $is_active      Display status (ACTIVE|HIDDEN)
@@ -154,6 +155,7 @@ class Ai_Clinic_Search_DB
             'lng'           => !empty($data['lng']) ? (float) $data['lng'] : null,
             'phone'         => sanitize_text_field($data['phone'] ?? ''),
             'email'         => sanitize_email($data['email'] ?? ''),
+            'website'       => sanitize_url($data['website'] ?? ''),
             'description'   => sanitize_textarea_field($data['description'] ?? ''),
             'verify_status' => in_array($data['verify_status'] ?? '', ['AI_DETECTED', 'ADMIN_VERIFIED', 'OWNER_VERIFIED'])
                 ? $data['verify_status']
@@ -323,6 +325,10 @@ class Ai_Clinic_Search_DB
 
         if (isset($data['email'])) {
             $data_to_update['email'] = sanitize_email($data['email']);
+        }
+        
+        if (isset($data['website'])) {
+            $data_to_update['website'] = sanitize_url($data['website']);
         }
 
         if (isset($data['description'])) {
