@@ -420,7 +420,7 @@ class Ai_Clinic_Search_DB
      * Get clinics by place_id.
      *
      * @param string $place_id     ID of Places.
-     * @param int    $limit         Number of records (default: 10).
+     * @param int    $limit        Number of records (default: 1).
      * @return array Array of clinic records.
      */
     public function aiclinic_get_clinics_by_place_id($place_id, $limit = 1)
@@ -428,6 +428,40 @@ class Ai_Clinic_Search_DB
         return $this->helper->database->aiclinic_get_all('aiclinic_clinics', [
             'filters' => ['place_id' => sanitize_text_field($place_id)],
             'limit'   => absint($limit)
+        ]) ?: [];
+    }
+
+    /**
+     * Get clinics by phone.
+     *
+     * @param string $phone     phone of Clinic.
+     * @param int    $limit     Number of records (default: 1).
+     * @return array Array of clinic records.
+     */
+    public function aiclinic_get_clinics_by_phone($phone, $limit = 1)
+    {
+        return $this->helper->database->aiclinic_get_all('aiclinic_clinics', [
+            'filters' => ['phone' => sanitize_text_field($phone)],
+            'limit'   => absint($limit)
+        ]) ?: [];
+    }
+
+    /**
+     * Get clinics by name and province code.
+     *
+     * @param string $name           Name of the clinic to search for.
+     * @param string|int $province_code  Province code to filter clinics.
+     * @param int    $limit          Number of records to return (default: 1).
+     * @return array                 Array of clinic records matching the criteria.
+     */
+    public function aiclinic_get_clinics_by_name_and_province($name, $province_code, $limit = 1)
+    {
+        return $this->helper->database->aiclinic_get_all('aiclinic_clinics', [
+            'filters' => [
+                'name' => sanitize_text_field($name),
+                'province' => $province_code
+            ],
+            'limit' => absint($limit)
         ]) ?: [];
     }
 

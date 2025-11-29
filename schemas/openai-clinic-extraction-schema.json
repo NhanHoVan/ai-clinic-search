@@ -17,14 +17,6 @@
                 "type": "string",
                 "description": "Full address"
               },
-              "province": {
-                "type": "string",
-                "description": "Province/city name"
-              },
-              "district": {
-                "type": "string",
-                "description": "District/area name"
-              },
               "phone": {
                 "type": "string",
                 "description": "Contact phone number, empty string if not found"
@@ -38,7 +30,7 @@
                 "description": "Brief description of the clinic"
               }
             },
-            "required": ["name", "address", "province", "district", "phone", "email", "description"],
+            "required": ["name", "address", "phone", "email", "description"],
             "additionalProperties": false
           }
         }

@@ -49,4 +49,11 @@ class Phone_Number_Helper
 			return false;
 		}
 	}
+
+	/**
+	 * Format phone number, keep only number
+	 */
+	public function normalize_phone($phone) {
+		return preg_replace('/\D+/', '', $phone);
+	}
 }
