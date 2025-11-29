@@ -409,7 +409,6 @@ class Ai_Clinic_Proxy_Controller
         }
 
         $body = [
-            'search' => sanitize_text_field($body_request['search']),
             'province' => sanitize_text_field($body_request['province']),
             'district' => sanitize_text_field($body_request['district']),
             'limit' => sanitize_text_field($body_request['limit']),

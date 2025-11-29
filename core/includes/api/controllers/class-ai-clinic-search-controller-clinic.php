@@ -95,23 +95,33 @@ class Ai_Clinic_Controller_Clinic
         // TODO
     }
 
+    /**
+     * POST ai-clinic-search/clinics
+     */
     public function get_refer_clinics($request)
     {
-        // TODO remove return dymmy data
-        $schema_file = CLINIC_SEARCH_PLUGIN_DIR . 'schemas/dummy_clinics.json';
-        if (!file_exists($schema_file)) {
-            throw new Exception('Schema file not found: dummy_clinics.json');
-        }
-        $json_schema = json_decode(file_get_contents($schema_file), true);
-        if (!$json_schema) {
-            throw new Exception('Invalid JSON schema file: dummy_clinics.json');
-        }
+        $body_request = $request->get_json_params();
+        $body = [
+            'province' => sanitize_text_field($body_request['province'] ?? ''),
+            'district' => sanitize_text_field($body_request['district'] ?? ''),
+            'limit'    => intval($body_request['limit'] ?? 8),
+            'page'     => max(1, intval($body_request['page'] ?? 1)),
+        ];
+
+        $offset = ($body['page'] - 1) * $body['limit'];
+
+        $result = $this->database->aiclinic_get_clinics_paginated([
+            'province' => $body['province'],
+            'district' => $body['district'],
+            'limit'    => $body['limit'],
+            'offset'   => $offset,
+        ]);
 
         return new WP_REST_Response([
             'success' => true,
-            'page' => 1,
-            'total' => 15,
-            'clinics' => $json_schema,
+            'page'    => $body['page'],
+            'total'   => $result['filtered'] ?? 0,
+            'clinics' => $result['data'] ?? [],
         ], 200);
     }
 
