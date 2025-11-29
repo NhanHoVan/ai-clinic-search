@@ -177,6 +177,7 @@ class Ai_Clinic_Controller_Clinic
                     'lng'           => $clinic['lng'] ?? null,
                     'phone'         => $clinic['phone'] ?? '',
                     'email'         => $clinic['email'] ?? '',
+                    'website'       => $clinic['website'] ?? '',
                     'description'   => $clinic['description'] ?? '',
                     'verify_status' => 'AI_DETECTED',
                     'is_active'     => 'ACTIVE'

@@ -209,6 +209,7 @@ class Ai_Clinic_Service_OpenAI
                 'address' => $clinic['address'] ?? '',
                 'phone' => $clinic['phone'] ?? '',
                 'email' => $clinic['email'] ?? '',
+                'website' => $clinic['website'] ?? '',
                 'description' => $clinic['description'] ?? ''
             ];
         }, $data['clinics']);

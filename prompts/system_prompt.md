@@ -17,7 +17,8 @@ Normalization rules:
     - Extract only one valid phone number.
     - Remove country code +84 or 84 at the beginning.
     - Keep only digits.
-    - If multiple numbers appear, return only the first valid one.
+    - If multiple numbers exist, take the first clearly associated with this clinic, do not mix them.
+    - If no valid number, return empty string.
 
 7. Deduplicate clinics within the same extraction:
     - If two or more clinics have the same normalized name, keep only one of them.
