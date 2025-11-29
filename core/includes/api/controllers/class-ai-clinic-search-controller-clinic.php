@@ -26,21 +26,30 @@ class Ai_Clinic_Controller_Clinic
     private $database;
 
     /**
-     * @var Ai_Clinic_Service_Google_Places GooglePlaces instance
+     * @var Ai_Clinic_Service_Google_Search GoogleSearch instance
      */
-    private $google_places;
+    private $google_search;
 
     /**
      * @var Ai_Clinic_Service_OpenAI OpenAI instance
      */
     private $openai;
 
+    /**
+     * helper
+     *
+     * @var		Ai_Clinic_Search_Helpers
+     * @since   1.0.0
+     */
+    private $helper;
+
     public function __construct()
     {
         $this->location_service = new Ai_Clinic_Service_Location();
         $this->database = new Ai_Clinic_Search_DB();
-        $this->google_places = new Ai_Clinic_Service_Google_Places();
+        $this->google_search = new Ai_Clinic_Service_Google_Search();
         $this->openai = new Ai_Clinic_Service_OpenAI();
+        $this->helper = new Ai_Clinic_Search_Helpers();
     }
 
     /**
@@ -99,11 +108,11 @@ class Ai_Clinic_Controller_Clinic
         }
 
         return new WP_REST_Response([
-                'success' => true,
-                'page' => 1,
-                'total' => 15,
-                'clinics' => $json_schema,
-            ], 200);
+            'success' => true,
+            'page' => 1,
+            'total' => 15,
+            'clinics' => $json_schema,
+        ], 200);
     }
 
     /**
@@ -139,38 +148,28 @@ class Ai_Clinic_Controller_Clinic
                 $district_name,
                 $province_name
             ));
-            $places_results = $this->google_places->textSearch($search_query, [
-                'region' => 'vn',
-                'language' => 'vi'
-            ]);
+            $search_results = $this->google_search->search($search_query);
 
-            if (empty($places_results['results'])) {
+            if (empty($search_results['clinics'])) {
                 return new WP_REST_Response([
                     'success' => false,
-                    'message' => 'No results found from Google Search',
+                    'message' => 'No results found from Search',
                     'keyword' => $search,
                     'clinics' => []
                 ], 200);
             }
 
+            $data = $this->openai->extractionClinics($search_results['clinics']);
+
             $saved_clinics = [];
-            foreach ($places_results['results'] as $clinic) {
+            foreach ($data['clinics'] as $clinic) {
                 if (empty($clinic['name'])) {
                     continue;
                 }
 
-                // Check if clinic already exists
-                $existing = $this->database->aiclinic_get_clinics_by_place_id($clinic['place_id']);
-
-                if ($existing) {
-                    $saved_clinics[] = $existing;
-                    continue;
-                }
-
-                // Insert new clinic
-                $clinic_id = $this->database->aiclinic_insert_clinic([
+                $clinic_update = [
                     'name'          => $clinic['name'],
-                    'place_id'      => $clinic['place_id'],
+                    'place_id'      => $clinic['place_id'] ?? '',
                     'address'       => $clinic['address'] ?? '',
                     'province'      => $province_code,
                     'district'      => $district_code,
@@ -181,8 +180,17 @@ class Ai_Clinic_Controller_Clinic
                     'description'   => $clinic['description'] ?? '',
                     'verify_status' => 'AI_DETECTED',
                     'is_active'     => 'ACTIVE'
-                ]);
+                ];
 
+                // Check if clinic already exists
+                $existing = $this->checkClinicExists($clinic_update);
+                if ($existing) {
+                    $saved_clinics[] = $existing;
+                    continue;
+                }
+
+                // Insert new clinic
+                $clinic_id = $this->database->aiclinic_insert_clinic($clinic_update);
                 if ($clinic_id) {
                     $saved_clinics[] = $this->database->aiclinic_get_clinics([
                         'filters' => ['id' => $clinic_id]
@@ -206,5 +214,41 @@ class Ai_Clinic_Controller_Clinic
                 'clinics' => []
             ], 500);
         }
+    }
+
+    /**
+     * Check if clinic already exists in DB.
+     *
+     * @param array $clinic Clinic data from AI
+     * @param object $database Your database object
+     * @return array|null Returns clinic data that already exists, or null if not yet exists
+     */
+    private function checkClinicExists($clinic)
+    {
+        $normalize = function ($str) {
+            $str = mb_strtolower($str);
+            $str = preg_replace('/[^a-z0-9 ]/', '', $str);
+            $str = trim($str);
+            return $str;
+        };
+
+        $existing = null;
+        if (!empty($clinic['phone'])) {
+            $phone = $this->helper->phone_number->normalize_phone($clinic['phone']);
+            $existing = $this->database->aiclinic_get_clinics_by_phone($phone);
+            if (!empty($existing)) {
+                return $existing[0];
+            }
+        }
+
+        if (!empty($clinic['name'])) {
+            $name = $normalize($clinic['name']);
+            $existing = $this->database->aiclinic_get_clinics_by_name_and_province($name, $clinic['province']);
+            if (!empty($existing)) {
+                return $existing[0];
+            }
+        }
+
+        return $existing;
     }
 }
