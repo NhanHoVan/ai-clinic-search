@@ -167,16 +167,8 @@ class Ai_Clinic_Service_OpenAI
      */
     private function buildClinicExtractionMessages(array $search_results): array
     {
-        $system_prompt = <<<EOT
-            You are a data extraction assistant.
-            Extract clinic information from the input data.
-
-            Rules:
-            1. If a field is missing, output an empty string.
-            2. Do NOT add extra tags or attributes.
-            3. Output JSON matching the schema provided (clinics array with name, address, phone, email, description).
-            4. No explanation or additional text.
-        EOT;
+        $prompt_file = CLINIC_SEARCH_PLUGIN_DIR . 'prompts/system_prompt.md';
+        $system_prompt = file_get_contents($prompt_file);
 
         $user_prompt = json_encode($search_results, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
 
@@ -191,18 +183,7 @@ class Ai_Clinic_Service_OpenAI
      *
      * @param array $search_results Raw data from Google Search, typically an array containing clinics.
      * 
-     * @return array Returns an associative array with a 'results' key:
-     *               ['clinics' => [
-     *                           [
-     *                               'name' => string,
-     *                               'address' => string,
-     *                               'phone' => string,
-     *                               'email' => string,
-     *                               'description' => string
-     *                           ],
-     *                           ...
-     *                       ]
-     *               ]
+     * @return array Returns an associative array with a 'results'
      * 
      * @throws Exception If the OpenAI API request fails or returns invalid/malformed data.
      */
@@ -210,12 +191,15 @@ class Ai_Clinic_Service_OpenAI
     {
         $prompt_message = $this->buildClinicExtractionMessages($search_results);
 
-        $data = $this->chatCompletionStructured(
+        $response = $this->chatCompletionStructured(
             $prompt_message,
             "openai-clinic-extraction-schema"
         );
 
-        if (!isset($data['results']['clinics']) || !is_array($data['results']['clinics'])) {
+        $data = $this->parseAiStructuredResponse($response);
+
+        if (!isset($data['clinics']) || !is_array($data['clinics'])) {
+            error_log(json_encode($data));
             throw new Exception('Invalid response from OpenAI: missing clinics array');
         }
 
@@ -227,8 +211,21 @@ class Ai_Clinic_Service_OpenAI
                 'email' => $clinic['email'] ?? '',
                 'description' => $clinic['description'] ?? ''
             ];
-        }, $data['results']['clinics']);
+        }, $data['clinics']);
 
         return ['clinics' => $normalized];
+    }
+
+    /**
+     * Parse the structured response returned by OpenAI's Chat Completion API.
+     * 
+     * @param array $response The raw response array returned by chatCompletionStructured().
+     * @return array The decoded associative array representing the AI's structured data.
+     *               Returns an empty array if the content is missing or cannot be decoded.
+     */
+    private function parseAiStructuredResponse(array $response): array
+    {
+        $content = $response['choices'][0]['message']['content'] ?? '';
+        return json_decode($content, true) ?: [];
     }
 }

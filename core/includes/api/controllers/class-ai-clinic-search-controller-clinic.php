@@ -192,9 +192,12 @@ class Ai_Clinic_Controller_Clinic
                 // Insert new clinic
                 $clinic_id = $this->database->aiclinic_insert_clinic($clinic_update);
                 if ($clinic_id) {
-                    $saved_clinics[] = $this->database->aiclinic_get_clinics([
+                    $result = $this->database->aiclinic_get_clinics([
                         'filters' => ['id' => $clinic_id]
                     ]);
+                    if ($result) {
+                        $saved_clinics[] = $result[0];
+                    }
                 }
             }
 
@@ -225,13 +228,6 @@ class Ai_Clinic_Controller_Clinic
      */
     private function checkClinicExists($clinic)
     {
-        $normalize = function ($str) {
-            $str = mb_strtolower($str);
-            $str = preg_replace('/[^a-z0-9 ]/', '', $str);
-            $str = trim($str);
-            return $str;
-        };
-
         $existing = null;
         if (!empty($clinic['phone'])) {
             $phone = $this->helper->phone_number->normalize_phone($clinic['phone']);
@@ -242,8 +238,7 @@ class Ai_Clinic_Controller_Clinic
         }
 
         if (!empty($clinic['name'])) {
-            $name = $normalize($clinic['name']);
-            $existing = $this->database->aiclinic_get_clinics_by_name_and_province($name, $clinic['province']);
+            $existing = $this->database->aiclinic_get_clinics_by_name_and_province($clinic['name'], $clinic['province']);
             if (!empty($existing)) {
                 return $existing[0];
             }
