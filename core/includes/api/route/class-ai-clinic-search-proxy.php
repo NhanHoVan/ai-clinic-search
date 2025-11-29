@@ -55,6 +55,12 @@ class Ai_Clinic_Proxy_Controller
             'permission_callback' => '__return_true',
         ]);
 
+        register_rest_route($namespace, '/clinics', [
+            'methods' => 'POST',
+            'callback' => [$this, 'get_refer_clinics'],
+            'permission_callback' => '__return_true',
+        ]);
+
         // Admin route to clear cache
         register_rest_route($namespace, '/cache/clear', [
             'methods' => 'POST',
@@ -371,6 +377,50 @@ class Ai_Clinic_Proxy_Controller
         ];
 
         $result = $this->proxy_request('POST', '/clinics/search', $body, $headers);
+
+        return rest_ensure_response($result);
+    }
+
+    /**
+     * Get refer clinics
+     */
+    public function get_refer_clinics(WP_REST_Request $request)
+    {
+        $body_request = $request->get_json_params();
+
+        if (empty($body_request)) {
+            return new WP_Error('invalid_request', 'Request body is required', ['status' => 400]);
+        }
+
+        if (empty($body_request['limit'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "limit" is required',
+                ['status' => 400]
+            );
+        }
+
+        if (empty($body_request['page'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "page" is required',
+                ['status' => 400]
+            );
+        }
+
+        $body = [
+            'search' => sanitize_text_field($body_request['search']),
+            'province' => sanitize_text_field($body_request['province']),
+            'district' => sanitize_text_field($body_request['district']),
+            'limit' => sanitize_text_field($body_request['limit']),
+            'page' => sanitize_text_field($body_request['page']),
+        ];
+
+        $headers = [
+            'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
+        ];
+
+        $result = $this->proxy_request('POST', '/clinics', $body, $headers);
 
         return rest_ensure_response($result);
     }

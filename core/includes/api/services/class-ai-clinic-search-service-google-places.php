@@ -62,22 +62,6 @@ class Ai_Clinic_Service_Google_Places
      */
     public function textSearch($query)
     {
-        // TODO remove return dymmy data
-        $schema_file = CLINIC_SEARCH_PLUGIN_DIR . 'schemas/dummy_clinics.json';
-        if (!file_exists($schema_file)) {
-            throw new Exception('Schema file not found: dummy_clinics.json');
-        }
-        $json_schema = json_decode(file_get_contents($schema_file), true);
-        if (!$json_schema) {
-            throw new Exception('Invalid JSON schema file: dummy_clinics.json');
-        }
-
-        return [
-            'status'  => 'OK',
-            'results' => $json_schema
-        ];
-        // End dummy data
-
         $this->loadSettings();
 
         $endpoint = $this->api_url . '/places:searchText';

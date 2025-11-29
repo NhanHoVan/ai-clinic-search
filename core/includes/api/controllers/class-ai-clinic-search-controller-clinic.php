@@ -86,9 +86,24 @@ class Ai_Clinic_Controller_Clinic
         // TODO
     }
 
-    public function get_clinics($request)
+    public function get_refer_clinics($request)
     {
-        // TODO
+        // TODO remove return dymmy data
+        $schema_file = CLINIC_SEARCH_PLUGIN_DIR . 'schemas/dummy_clinics.json';
+        if (!file_exists($schema_file)) {
+            throw new Exception('Schema file not found: dummy_clinics.json');
+        }
+        $json_schema = json_decode(file_get_contents($schema_file), true);
+        if (!$json_schema) {
+            throw new Exception('Invalid JSON schema file: dummy_clinics.json');
+        }
+
+        return new WP_REST_Response([
+                'success' => true,
+                'page' => 1,
+                'total' => 15,
+                'clinics' => $json_schema,
+            ], 200);
     }
 
     /**
