@@ -1,4 +1,9 @@
-#ai-search-root input[type=search] {
-    box-shadow: none !important;
-    height: auto !important;
+#ai-search-root input[type="search"] {
+	box-shadow: none !important;
+	height: auto !important;
+}
+
+#ai-search-root ul.ant-rate li {
+	margin-left: auto !important;
+	margin-bottom: auto !important;
 }
