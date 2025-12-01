@@ -1,18 +1,10 @@
-.flex-col-w200 {
+.flex-col {
     display: flex;
     flex-direction: column;
-    gap: 5px;
-    width: 200px;
-}
-
-.flex-col-fl2 {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    flex: 2;
+    gap: 8px;
 }
 
 .label-input {
     font-size: 15px;
-    color: #555555;
+    color: #000000;
 }
