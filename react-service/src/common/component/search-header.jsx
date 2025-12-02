@@ -50,11 +50,10 @@ export default function SearchHeader({
 				<Col xs={24} sm={24} md={8}>
 					<div className="flex-col">
 						<span className="label-input">
-							Nhập tên phòng khám hoặc từ khóa
+							Nhập từ khóa cần tìm
 						</span>
 						<Space.Compact style={{ width: "100%" }}>
 							<Input
-								size="large"
 								allowClear
 								placeholder="Enter hospital, doctor, or keyword..."
 								value={searchText}

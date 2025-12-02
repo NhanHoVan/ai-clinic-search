@@ -3,11 +3,10 @@ import { Typography, message, Row, Col, Pagination } from "antd";
 import { normalizeText } from "@/utils/utils";
 import { useWordPress } from "@/hooks/use-wordpress";
 import { useGeoLocation } from "@/hooks/use-geo-location";
+import { useLocationPreference } from "@/hooks/use-location-preference";
 import ClinicCard from "@/component/clinic-card.jsx";
 import SearchHeader from "@/component/search-header.jsx";
 import ClinicSearchList from "@/component/clinic-search-list.jsx";
-
-// import dummyData from "../../../../src/dummy-data.json";
 
 const { Title } = Typography;
 
@@ -29,8 +28,9 @@ export default function App() {
 
 	const [provinces, setProvinces] = useState([]);
 	const [districts, setDistricts] = useState([]);
-	const [selectedProvince, setSelectedProvince] = useState("");
-	const [selectedDistrict, setSelectedDistrict] = useState("");
+	const { pref, setProvince, setDistrict } = useLocationPreference();
+	const [selectedProvince, setSelectedProvince] = useState();
+	const [selectedDistrict, setSelectedDistrict] = useState();
 
 	const fetchProvinces = useCallback(
 		async (search = "") => {
@@ -81,7 +81,7 @@ export default function App() {
 					},
 					signal: abortControllerRef.current.signal,
 				});
-				setClinicsSearch(data);
+				setClinicsSearch(data.clinics);
 			} catch (error) {
 				if (error.name !== "AbortError") {
 					throw error;
@@ -123,8 +123,6 @@ export default function App() {
 
 	useEffect(() => {
 		handleClinicsRefer(1);
-		// TODO dummy
-		// setClinicsRefer(dummyData);
 	}, [selectedProvince, selectedDistrict]);
 
 	useEffect(() => {
@@ -133,6 +131,11 @@ export default function App() {
 
 	useEffect(() => {
 		if (!provinces.length || selectedProvince) return;
+
+		if (pref.province) {
+			setSelectedProvince(pref.province);
+			return;
+		}
 
 		async function detect() {
 			const regionName = await getRegionName();
@@ -153,8 +156,15 @@ export default function App() {
 	}, [provinces, getRegionName]);
 
 	useEffect(() => {
+		if (pref.district) {
+			setSelectedDistrict(pref.district);
+		}
+	}, [districts]);
+
+	useEffect(() => {
 		if (!selectedProvince) {
 			setDistricts([]);
+			setDistrict(null);
 			setSelectedDistrict("");
 			return;
 		}
@@ -171,11 +181,6 @@ export default function App() {
 	}, []);
 
 	const handleClinicsSearch = async (search) => {
-		// TODO dummy
-		// setHasSearched(true);
-		// setClinicsSearch(dummyData);
-		// return;
-
 		setSearchText(search);
 
 		const isEmptySearch = !search?.trim();
@@ -203,6 +208,7 @@ export default function App() {
 
 	const handleProvinceChange = (value) => {
 		setSelectedProvince(value);
+		setProvince(value);
 		setSelectedDistrict("");
 		setDistricts([]);
 		setSearchText("");
@@ -211,6 +217,7 @@ export default function App() {
 
 	const handleDistrictChange = (value) => {
 		setSelectedDistrict(value);
+		setDistrict(value);
 		setSearchText("");
 		setHasSearched(false);
 	};
@@ -218,7 +225,7 @@ export default function App() {
 	const handleChangeText = (value) => {
 		setSearchText(value);
 		if (value === "") {
-			setHasSearched(false);
+			// setHasSearched(false);
 		}
 	};
 

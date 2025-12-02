@@ -31,7 +31,7 @@ export default function ClinicCard({ clinic, loading, onCopy, onViewDetail }) {
 			<CopyOutlined
 				key="copy"
 				style={{ color: "#4ecdc4" }}
-				onClick={() => onCopy(item.name)}
+				onClick={() => onCopy(clinic.name)}
 			/>
 		);
 	}
@@ -40,7 +40,7 @@ export default function ClinicCard({ clinic, loading, onCopy, onViewDetail }) {
 			<EyeOutlined
 				key="detail"
 				style={{ color: "#4e50cdff" }}
-				onClick={() => onViewDetail(item.id)}
+				onClick={() => onViewDetail(clinic.id)}
 			/>
 		);
 	}
