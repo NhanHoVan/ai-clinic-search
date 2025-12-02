@@ -1,32 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import {
-	Input,
-	Select,
-	List,
-	Card,
-	Typography,
-	Spin,
-	message,
-	Row,
-	Col,
-	Pagination,
-	Image,
-	Tooltip,
-	Rate,
-} from "antd";
-import { CopyOutlined, EyeOutlined } from "@ant-design/icons";
-import {
-	maskPhone,
-	maskEmail,
-	getStatusIcon,
-	normalizeText,
-} from "@/utils/utils";
-import { IMAGE_FALLBACK } from "@/utils/image";
+import { Typography, message, Row, Col, Pagination } from "antd";
+import { normalizeText } from "@/utils/utils";
 import { useWordPress } from "@/hooks/use-wordpress";
 import { useGeoLocation } from "@/hooks/use-geo-location";
+import { useLocationPreference } from "@/hooks/use-location-preference";
+import ClinicCard from "@/component/clinic-card.jsx";
+import SearchHeader from "@/component/search-header.jsx";
+import ClinicSearchList from "@/component/clinic-search-list.jsx";
 
 const { Title } = Typography;
-const { Meta } = Card;
 
 export default function App() {
 	const { apiFetch } = useWordPress();
@@ -36,6 +18,7 @@ export default function App() {
 	const [searchText, setSearchText] = useState("");
 	const [loadingSearch, setLoadingSearch] = useState(false);
 	const [clinicsSearch, setClinicsSearch] = useState([]);
+	const [hasSearched, setHasSearched] = useState(false);
 
 	const [page, setPage] = useState(1);
 	const [limit] = useState(8);
@@ -45,8 +28,9 @@ export default function App() {
 
 	const [provinces, setProvinces] = useState([]);
 	const [districts, setDistricts] = useState([]);
-	const [selectedProvince, setSelectedProvince] = useState("");
-	const [selectedDistrict, setSelectedDistrict] = useState("");
+	const { pref, setProvince, setDistrict } = useLocationPreference();
+	const [selectedProvince, setSelectedProvince] = useState();
+	const [selectedDistrict, setSelectedDistrict] = useState();
 
 	const fetchProvinces = useCallback(
 		async (search = "") => {
@@ -97,7 +81,7 @@ export default function App() {
 					},
 					signal: abortControllerRef.current.signal,
 				});
-				setClinicsSearch(data);
+				setClinicsSearch(data.clinics);
 			} catch (error) {
 				if (error.name !== "AbortError") {
 					throw error;
@@ -118,7 +102,7 @@ export default function App() {
 				},
 			});
 
-			setClinicsRefer(data.clinics || []);
+			setClinicsRefer(data.clinics || dummyData);
 			setTotal(data.total || 0);
 			setPage(data.page || page);
 		},
@@ -148,6 +132,11 @@ export default function App() {
 	useEffect(() => {
 		if (!provinces.length || selectedProvince) return;
 
+		if (pref.province) {
+			setSelectedProvince(pref.province);
+			return;
+		}
+
 		async function detect() {
 			const regionName = await getRegionName();
 			if (!regionName) return;
@@ -167,8 +156,15 @@ export default function App() {
 	}, [provinces, getRegionName]);
 
 	useEffect(() => {
+		if (pref.district) {
+			setSelectedDistrict(pref.district);
+		}
+	}, [districts]);
+
+	useEffect(() => {
 		if (!selectedProvince) {
 			setDistricts([]);
+			setDistrict(null);
 			setSelectedDistrict("");
 			return;
 		}
@@ -199,6 +195,7 @@ export default function App() {
 
 		try {
 			await fetchClinicsSearch(search);
+			setHasSearched(true);
 		} catch (e) {
 			if (e?.name !== "AbortError") {
 				message.error(e?.message);
@@ -211,14 +208,25 @@ export default function App() {
 
 	const handleProvinceChange = (value) => {
 		setSelectedProvince(value);
+		setProvince(value);
 		setSelectedDistrict("");
 		setDistricts([]);
 		setSearchText("");
+		setHasSearched(false);
 	};
 
 	const handleDistrictChange = (value) => {
 		setSelectedDistrict(value);
+		setDistrict(value);
 		setSearchText("");
+		setHasSearched(false);
+	};
+
+	const handleChangeText = (value) => {
+		setSearchText(value);
+		if (value === "") {
+			// setHasSearched(false);
+		}
 	};
 
 	const handleClickCopy = (clinicName) => {
@@ -239,117 +247,25 @@ export default function App() {
 				🔍 AI Clinic Search
 			</Title>
 
-			<div style={{ display: "flex", gap: 10, marginBottom: 20 }}>
-				<div className="flex-col-w200">
-					<span className="label-input">Chọn tỉnh/thành phố</span>
-					<Select
-						showSearch
-						placeholder="Select Province"
-						size="large"
-						value={selectedProvince || undefined}
-						onChange={handleProvinceChange}
-						filterSort={(a, b) =>
-							(a?.label ?? "").localeCompare(b?.label ?? "")
-						}
-						allowClear
-						optionFilterProp="label"
-						options={provinces.map((p) => ({
-							label: p.name,
-							value: p.code,
-						}))}
-						disabled={loadingSearch}
-					/>
-				</div>
+			<SearchHeader
+				provinces={provinces}
+				districts={districts}
+				selectedProvince={selectedProvince}
+				selectedDistrict={selectedDistrict}
+				searchText={searchText}
+				loading={loadingSearch}
+				handleProvinceChange={handleProvinceChange}
+				handleDistrictChange={handleDistrictChange}
+				setSearchText={handleChangeText}
+				handleSearch={handleClinicsSearch}
+			/>
 
-				<div className="flex-col-w200">
-					<span className="label-input">Chọn xã/phường</span>
-					<Select
-						showSearch
-						placeholder="Select District"
-						size="large"
-						value={selectedDistrict || undefined}
-						onChange={handleDistrictChange}
-						disabled={loadingSearch || !districts.length}
-						filterSort={(a, b) =>
-							(a?.label ?? "").localeCompare(b?.label ?? "")
-						}
-						allowClear
-						optionFilterProp="label"
-						options={districts.map((d) => ({
-							label: d.name,
-							value: d.code,
-						}))}
-					/>
-				</div>
-
-				<div className="flex-col-fl2">
-					<span className="label-input">
-						Nhập tên phòng khám, từ khóa cần tìm
-					</span>
-					<Input.Search
-						value={searchText}
-						onChange={(e) => setSearchText(e.target.value)}
-						placeholder="Enter hospital, doctor, or location..."
-						allowClear
-						enterButton="Search"
-						size="large"
-						onSearch={handleClinicsSearch}
-						loading={loadingSearch}
-					/>
-				</div>
-			</div>
-
-			<div style={{ marginTop: 30 }}>
-				{loadingSearch ? (
-					<Spin
-						size="large"
-						style={{ display: "block", margin: "50px auto" }}
-					/>
-				) : clinicsSearch.length > 0 ? (
-					<>
-						<Typography.Text
-							type="secondary"
-							style={{ marginBottom: 16, display: "block" }}
-						>
-							Tìm thấy {clinicsSearch.length} kết quả
-							{searchText && ` for "${searchText}"`}
-						</Typography.Text>
-						<List
-							grid={{ gutter: 16, column: 1 }}
-							dataSource={clinicsSearch}
-							renderItem={(item) => (
-								<List.Item>
-									<Card
-										title={
-											<a
-												href={item.link}
-												target="_blank"
-												rel="noopener noreferrer"
-												dangerouslySetInnerHTML={{
-													__html: item.title.rendered,
-												}}
-											/>
-										}
-										hoverable
-									>
-										<div
-											dangerouslySetInnerHTML={{
-												__html: item.excerpt.rendered,
-											}}
-										/>
-									</Card>
-								</List.Item>
-							)}
-						/>
-					</>
-				) : (
-					<Card loading={loadingSearch}>
-						<Typography.Text type="secondary">
-							Không tìm thấy thông tin nào!
-						</Typography.Text>
-					</Card>
-				)}
-			</div>
+			<ClinicSearchList
+				clinics={clinicsSearch}
+				searchText={searchText}
+				loading={loadingSearch}
+				hasSearched={hasSearched}
+			/>
 
 			{clinicsRefer.length > 0 ? (
 				<div style={{ marginTop: 30 }}>
@@ -357,105 +273,17 @@ export default function App() {
 						level={3}
 						style={{ textAlign: "left", marginBottom: 20 }}
 					>
-						Tham khảo các địa chỉ khác gần bạn:
+						Tham khảo các địa chỉ khác:
 					</Title>
 					<Row gutter={[16, 16]}>
 						{clinicsRefer.map((clinic, index) => (
 							<Col key={index} xs={24} sm={12} md={12} lg={6}>
-								<Card
-									cover={
-										<Image
-											style={{ objectFit: "cover" }}
-											height={200}
-											draggable={false}
-											alt={clinic.name}
-											src={clinic.img_cover}
-											fallback={IMAGE_FALLBACK}
-										/>
-									}
-									actions={[
-										<CopyOutlined
-											key="share"
-											style={{ color: "#4ecdc4" }}
-											onClick={() =>
-												handleClickCopy(clinic.name)
-											}
-										/>,
-										<EyeOutlined
-											key="detail"
-											style={{ color: "#4e50cdff" }}
-											onClick={() =>
-												handleDetailClinic(clinic.id)
-											}
-										/>,
-									]}
-									hoverable
+								<ClinicCard
+									clinic={clinic}
 									loading={loadingRefer}
-								>
-									<Meta
-										title={
-											<span>
-												{getStatusIcon(
-													clinic.verify_status
-												)}{" "}
-												<Tooltip title={clinic.name}>
-													{clinic.name}
-												</Tooltip>
-											</span>
-										}
-										description={
-											clinic.description && (
-												<p>
-													{clinic.description.length >
-													80
-														? clinic.description.substring(
-																0,
-																80
-														  ) + "..."
-														: clinic.description}
-												</p>
-											)
-										}
-									/>
-									<p>
-										<strong>Địa chỉ:</strong>{" "}
-										{clinic.address}
-									</p>
-									{clinic.phone && (
-										<p>
-											<strong>Điện thoại:</strong>{" "}
-											{maskPhone(clinic.phone)}
-										</p>
-									)}
-									{clinic.email && (
-										<p>
-											<strong>Email:</strong>{" "}
-											{maskEmail(clinic.email)}
-										</p>
-									)}
-									{clinic.rating && (
-										<p style={{ marginBottom: 8 }}>
-											<Rate
-												disabled
-												allowHalf
-												value={clinic.rating}
-												style={{
-													fontSize: 14,
-													marginRight: 4,
-												}}
-											/>
-											<span
-												style={{
-													fontSize: 13,
-													color: "#888",
-												}}
-											>
-												({clinic.user_rating_count}{" "}
-												reviews)
-											</span>
-										</p>
-									)}
-								</Card>
+									onCopy={handleClickCopy}
+									onViewDetail={handleDetailClinic}
+								/>
 							</Col>
 						))}
 					</Row>
