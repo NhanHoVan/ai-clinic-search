@@ -242,9 +242,9 @@ export default function App() {
 	};
 
 	return (
-		<div style={{ margin: "40px auto" }}>
-			<Title level={2} style={{ textAlign: "center" }}>
-				🔍 AI Clinic Search
+		<div style={{ margin: "20px auto" }}>
+			<Title level={2} style={{ textAlign: "center", marginBottom: 20 }}>
+				Tìm kiếm phòng khám, bệnh viện gần bạn
 			</Title>
 
 			<SearchHeader
