@@ -17,7 +17,7 @@ export default function SearchHeader({
 		<div style={{ marginBottom: 24 }}>
 			<Row gutter={[16, 16]}>
 				{/* Province */}
-				<Col xs={24} sm={12} md={8}>
+				<Col xs={24} sm={12} md={6}>
 					<SelectField
 						label="Chọn tỉnh/thành phố"
 						value={selectedProvince}
@@ -26,13 +26,13 @@ export default function SearchHeader({
 							label: p.name,
 							value: p.code,
 						}))}
-						placeholder="Select Province"
+						placeholder="Chọn tỉnh/thành phố"
 						disabled={loading}
 					/>
 				</Col>
 
 				{/* District */}
-				<Col xs={24} sm={12} md={8}>
+				<Col xs={24} sm={12} md={6}>
 					<SelectField
 						label="Chọn xã/phường"
 						value={selectedDistrict}
@@ -41,13 +41,13 @@ export default function SearchHeader({
 							label: d.name,
 							value: d.code,
 						}))}
-						placeholder="Select District"
+						placeholder="Chọn xã/phường"
 						disabled={loading || !districts.length}
 					/>
 				</Col>
 
 				{/* Search box */}
-				<Col xs={24} sm={24} md={8}>
+				<Col xs={24} sm={24} md={12}>
 					<div className="flex-col">
 						<span className="label-input">
 							Nhập từ khóa cần tìm
@@ -55,8 +55,10 @@ export default function SearchHeader({
 						<Space.Compact style={{ width: "100%" }}>
 							<Input
 								allowClear
-								placeholder="Enter hospital, doctor, or keyword..."
+								style={{ paddingTop: 0, paddingBottom: 0 }}
+								placeholder="Nhập tên phòng khám, bệnh viện..."
 								value={searchText}
+								size="large"
 								onChange={(e) => setSearchText(e.target.value)}
 							/>
 							<Button
