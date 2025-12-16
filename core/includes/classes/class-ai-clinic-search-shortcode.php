@@ -18,7 +18,7 @@ class AI_Clinic_Search_Shortcode
 
         add_action('init', [$this, 'aiclinic_register_shortcodes']);
         add_action('wp_enqueue_scripts', [$this, 'aiclinic_enqueue_assets']);
-        add_action('admin_notices', [$this, 'aiclinic_admin_notice']);
+        // add_action('admin_notices', [$this, 'aiclinic_admin_notice']);
         add_filter('script_loader_tag', [$this, 'aiclinic_add_module_type'], 10, 3);
     }
 

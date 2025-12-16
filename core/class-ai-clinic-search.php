@@ -86,6 +86,15 @@ if (! class_exists('Ai_Clinic_Search')) :
 		public $ai_generator;
 
 		/**
+		 * AICLINIC setting object.
+		 *
+		 * @access	public
+		 * @since	1.0.0
+		 * @var		object|Ai_Clinic_Search_Setting
+		 */
+		public $setting;
+
+		/**
 		 * Throw error on object clone.
 		 *
 		 * Cloning instances of the class is forbidden.
@@ -130,6 +139,7 @@ if (! class_exists('Ai_Clinic_Search')) :
 				self::$instance->includes();
 				self::$instance->helpers		= new Ai_Clinic_Search_Helpers();
 				self::$instance->database		= new Ai_Clinic_Search_DB();
+				self::$instance->setting		= new Ai_Clinic_Search_Setting();
 
 				//Fire the plugin logic
 				new Ai_Clinic_Search_Run();
@@ -172,6 +182,7 @@ if (! class_exists('Ai_Clinic_Search')) :
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/classes/class-ai-clinic-search-run.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/classes/class-ai-clinic-search-uninstaller.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/classes/class-ai-clinic-search-shortcode.php';
+			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/classes/class-ai-clinic-search-setting.php';
 		}
 
 		/**
