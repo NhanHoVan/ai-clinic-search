@@ -12,6 +12,10 @@ class AI_Clinic_Search_Shortcode
 {
     public function __construct()
     {
+        add_action('init', [$this, 'aiclinic_start_session']);
+        add_action('wp', [$this, 'aiclinic_count_unique_visit']);
+        add_shortcode('site_visit_count', [$this, 'aiclinic_shortcode_visit_count']);
+
         add_action('init', [$this, 'aiclinic_register_shortcodes']);
         add_action('wp_enqueue_scripts', [$this, 'aiclinic_enqueue_assets']);
         add_action('admin_notices', [$this, 'aiclinic_admin_notice']);
@@ -214,5 +218,45 @@ class AI_Clinic_Search_Shortcode
             </ul>
         </div>
 <?php
+    }
+
+    /**
+     * Initialize PHP session if not already started.
+     * 
+     * @return void
+     */
+    public function aiclinic_start_session()
+    {
+        if (!session_id()) {
+            session_start();
+        }
+    }
+
+    /**
+     * Count a unique site visit using PHP session.
+     *
+     * @return void
+     */
+    public function aiclinic_count_unique_visit()
+    {
+        if (!isset($_SESSION['aiclinic_visited'])) {
+            $_SESSION['aiclinic_visited'] = true;
+
+            $count = get_option('aiclinic_visit_count', 0);
+            $count++;
+            update_option('aiclinic_visit_count', $count);
+        }
+    }
+
+    /**
+     * Shortcode callback for displaying the total number of site visits.
+     *
+     * Usage: [site_visit_count]
+     *
+     * @return string Formatted visit count.
+     */
+    public function aiclinic_shortcode_visit_count()
+    {
+        return number_format(get_option('aiclinic_visit_count', 0));
     }
 }
