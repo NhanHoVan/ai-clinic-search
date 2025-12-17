@@ -1,0 +1,35 @@
+body {
+    background: #ffffff !important;
+}
+
+.login form .input, .login input[type=password], .login input[type=text] {
+    border-radius: 20px;
+    font-size: 14px !important;
+    padding: 10px 15px;
+    border-color: #1e73be;
+}
+
+.login form .forgetmenot {
+    float: none !important;
+}
+
+.wp-core-ui .button-primary {
+    background: #1e73be !important;
+    border: none !important;
+    border-radius: 20px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.login form {
+    border-radius: 25px;
+    box-shadow: 0 0 10px #00aca930;
+}
+
+.login #backtoblog {
+    display: none;
+}
+
+.login #nav {
+    text-align: end;
+}

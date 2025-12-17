@@ -22,7 +22,13 @@ function aiclinic_settings_page()
         <?php endif; ?>
 
         <div class="mt-4">
-            <!-- TODO -->
+            <form method="post" action="options.php" class="needs-validation" novalidate>
+                <?php
+                settings_fields('aiclinic_settings_group');
+                do_settings_sections('aiclinic_settings_group');
+                submit_button('Lưu cài đặt', 'btn btn-primary');
+                ?>
+            </form>
         </div>
     </div>
 <?php
