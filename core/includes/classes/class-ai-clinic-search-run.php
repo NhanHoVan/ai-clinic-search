@@ -102,7 +102,7 @@ class Ai_Clinic_Search_Run
 			'id'		=> 'ai-clinic-search-id',
 			'title'		=> CLINIC_SEARCH_NAME,
 			'parent'	=> false,
-			'href'		=> admin_url('admin.php?page=aiclinic-customers'),
+			'href'		=> admin_url('admin.php?page=aiclinic-management'),
 			'group'		=> false,
 			'meta'		=> array(
 				'title'		=> CLINIC_SEARCH_NAME,
@@ -144,6 +144,14 @@ class Ai_Clinic_Search_Run
 		);
 		add_submenu_page(
 			'aiclinic-customers',
+			__('Clinic management', 'ai-clinic-search'),
+			__('Clinic management', 'ai-clinic-search'),
+			'edit_posts',
+			'aiclinic-management',
+			'aiclinic_management_page'
+		);
+		add_submenu_page(
+			'aiclinic-customers',
 			__('General Settings', 'ai-clinic-search'),
 			__('General Settings', 'ai-clinic-search'),
 			'manage_options',
@@ -165,6 +173,7 @@ class Ai_Clinic_Search_Run
 	{
 		$plugin_pages = [
 			'aiclinic-customers',
+			'aiclinic-management',
 			'aiclinic-settings',
 			'aiclinic-logs'
 		];
@@ -247,6 +256,7 @@ class Ai_Clinic_Search_Run
 	private function includes()
 	{
 		require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/admin/ai-clinic-search-customers.php';
+		require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/admin/ai-clinic-search-management.php';
 		require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/admin/ai-clinic-search-settings.php';
 		require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/admin/ai-clinic-search-logs.php';
 	}
