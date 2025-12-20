@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Typography, message, Table, Button, Space } from "antd";
 import { useWordPress } from "@/hooks/use-wordpress";
 import { useLocationPreference } from "@/hooks/use-location-preference";
 import SearchHeader from "@/component/search-header.jsx";
+import EditClinicModal from "@/component/edit-clinic-modal.jsx";
 
 const { Title, Text } = Typography;
 
@@ -21,6 +22,11 @@ export default function App() {
 	const { pref, setProvince, setDistrict } = useLocationPreference();
 	const [selectedProvince, setSelectedProvince] = useState();
 	const [selectedDistrict, setSelectedDistrict] = useState();
+
+	// Model edit clinic
+	const [openModel, setOpenModel] = useState(false);
+	const [loadingModel, setLoadingModel] = useState(false);
+	const [selectedClinic, setSelectedClinic] = useState(null);
 
 	const fetchProvinces = useCallback(
 		async (search = "") => {
@@ -142,9 +148,65 @@ export default function App() {
 		setSearchText(value);
 	};
 
-	const handleSuggestEdit = (record) => {
-		// TODO update handle for copy clinic infor
-		message.success(`Đề xuất chỉnh sửa: ${record.name}`);
+	const getClinicDetail = useCallback(
+		async (id) => {
+			const data = await apiFetch("/clinic", {
+				method: "GET",
+				params: id,
+			});
+
+			setSelectedClinic(data);
+			return data;
+		},
+		[apiFetch]
+	);
+
+	const updateClinicDetail = useCallback(
+		async (payload) => {
+			if (!payload) {
+				throw new Error("Missing required data");
+			}
+
+			return await apiFetch("/clinic/suggest-update", {
+				body: {
+					...payload,
+				},
+			});
+		},
+		[apiFetch, selectedClinic]
+	);
+
+	const handleUpdateClinic = async (data) => {
+		try {
+			setLoadingModel(true);
+			await updateClinicDetail(data);
+			message.success("Đã gửi đề xuất chỉnh sửa");
+		} catch (err) {
+			console.error(err);
+			message.error("Gửi đề xuất thất bại");
+		} finally {
+			setLoadingModel(false);
+		}
+	};
+
+	const handleSuggestEdit = async (record) => {
+		try {
+			setLoadingModel(true);
+
+			await getClinicDetail(record.id);
+			setOpenModel(true);
+		} catch (err) {
+			message.error("Không thể tải thông tin phòng khám");
+
+			const clinic = clinicsRefer.find((item) => item.id === record.id);
+
+			if (clinic) {
+				setSelectedClinic(clinic);
+				setOpenModel(true);
+			}
+		} finally {
+			setLoadingModel(false);
+		}
 	};
 
 	const columns = [
@@ -227,6 +289,20 @@ export default function App() {
 				}}
 				onChange={handleTableChange}
 				scroll={{ x: 1000 }}
+			/>
+
+			<EditClinicModal
+				open={openModel}
+				loading={loadingModel}
+				clinic={selectedClinic}
+				onCancel={() => {
+					setOpenModel(false);
+					setSelectedClinic(null);
+				}}
+				onSubmit={handleUpdateClinic}
+				title="Đề xuất chỉnh sửa thông tin phòng khám"
+				okeText="Gửi đề xuất"
+				cancelText="Hủy"
 			/>
 		</div>
 	);
