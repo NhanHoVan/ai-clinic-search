@@ -69,6 +69,24 @@ class Ai_Clinic_Proxy_Controller
                 return current_user_can('manage_options');
             },
         ]);
+
+        // TODO check
+        register_rest_route($namespace, '/clinic', [
+            'methods' => 'GET',
+            'callback' => [$this, 'get_clinic'],
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            },
+        ]);
+
+        // TODO check
+        register_rest_route($namespace, '/clinic/suggest-update', [
+            'methods' => 'POST',
+            'callback' => [$this, 'suggest_update_clinic'],
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            },
+        ]);
     }
 
     /**
@@ -454,5 +472,55 @@ class Ai_Clinic_Proxy_Controller
             'success' => true,
             'message' => $message,
         ]);
+    }
+
+    /**
+     * Get clinic detail
+     */
+    public function get_clinic(WP_REST_Request $request)
+    {
+        $id = $request->get_param('id');
+        $params = [];
+
+        if (!empty($id)) {
+            $params['id'] = sanitize_text_field($id);
+        }
+
+        $result = $this->proxy_get('/clinic', $params);
+
+        return rest_ensure_response($result);
+    }
+
+    /**
+     * Suggest update clinic detail
+     */
+    public function suggest_update_clinic(WP_REST_Request $request)
+    {
+        $body_request = $request->get_json_params();
+
+        if (empty($body_request)) {
+            return new WP_Error('invalid_request', 'Request body is required', ['status' => 400]);
+        }
+
+        if (empty($body_request['id'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "ID" is required',
+                ['status' => 400]
+            );
+        }
+
+        $body = [
+            'type' => 'suggest',
+            // TODO add param
+        ];
+
+        $headers = [
+            'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
+        ];
+
+        $result = $this->proxy_request('POST', '/clinic/update', $body, $headers);
+
+        return rest_ensure_response($result);
     }
 }
