@@ -17,13 +17,19 @@ class AI_Clinic_Search_Shortcode
         add_shortcode('site_visit_count', [$this, 'aiclinic_shortcode_visit_count']);
 
         add_action('init', [$this, 'aiclinic_register_shortcodes']);
-        add_action('wp_enqueue_scripts', [$this, 'aiclinic_enqueue_assets']);
+        add_action('wp_enqueue_scripts', [$this, 'aiclinic_enqueue_frontend_assets']);
+        add_action('admin_enqueue_scripts', [$this, 'aiclinic_enqueue_admin_assets']);
         // add_action('admin_notices', [$this, 'aiclinic_admin_notice']);
         add_filter('script_loader_tag', [$this, 'aiclinic_add_module_type'], 10, 3);
     }
 
     /**
-     * React service list configuration
+     * Return React app configuration list.
+     *
+     * Each app defines shortcode, JS entry, context (public/admin),
+     * and optional admin page slug.
+     *
+     * @return array<string, array>
      */
     public function aiclinic_get_apps_config()
     {
@@ -33,13 +39,27 @@ class AI_Clinic_Search_Shortcode
                 'root_id' => 'ai-search-root',
                 'app_path' => 'public/search/index.js',
                 'title' => 'AI Search Module',
+                'context' => 'public',
+            ],
+            'management' => [
+                'shortcode' => 'ai_react_clinic_management',
+                'root_id' => 'clinic-management-root',
+                'app_path' => 'admin/management/index.js',
+                'title' => 'Clinic Management Module',
+                'context' => 'admin',
+                'admin_page' => 'aiclinic-management',
             ],
             // TODO add new service
         ];
     }
 
     /**
-     * Get the file with the hash in the build directory
+     * Get a built asset file matching a glob pattern.
+     *
+     * Used to resolve Vite hashed filenames.
+     *
+     * @param string $pattern
+     * @return string|null Relative file path or null if not found.
      */
     private function aiclinic_get_hashed_file($pattern)
     {
@@ -52,46 +72,12 @@ class AI_Clinic_Search_Shortcode
     }
 
     /**
-     * Check if the current page contains any apps
-     */
-    private function aiclinic_page_has_app()
-    {
-        global $post;
-        if (!isset($post->post_content)) {
-            return false;
-        }
-
-        $apps = $this->aiclinic_get_apps_config();
-        foreach ($apps as $app) {
-            if (strpos($post->post_content, '[' . $app['shortcode'] . ']') !== false) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Get the list of active apps on the page
-     */
-    private function aiclinic_get_active_apps()
-    {
-        global $post;
-        if (!isset($post->post_content)) {
-            return [];
-        }
-
-        $active = [];
-        foreach ($this->aiclinic_get_apps_config() as $key => $app) {
-            if (strpos($post->post_content, '[' . $app['shortcode'] . ']') !== false) {
-                $active[$key] = $app;
-            }
-        }
-
-        return $active;
-    }
-
-    /**
-     * Add type="module" for script of react service
+     * Force type="module" for React build scripts.
+     *
+     * @param string $tag
+     * @param string $handle
+     * @param string $src
+     * @return string
      */
     public function aiclinic_add_module_type($tag, $handle, $src)
     {
@@ -106,7 +92,11 @@ class AI_Clinic_Search_Shortcode
     }
 
     /**
-     * Enqueue vendor assets (shared chunks: react, antd, css)
+     * Enqueue shared vendor assets (React, AntD, CSS, reset).
+     *
+     * Loaded once per request when at least one app is active.
+     *
+     * @return void
      */
     private function aiclinic_enqueue_vendors()
     {
@@ -114,6 +104,7 @@ class AI_Clinic_Search_Shortcode
         $css_file = $this->aiclinic_get_hashed_file('shared/assets/style-*.css');
         $vendor_react = $this->aiclinic_get_hashed_file('shared/chunks/vendor-react-*.js');
         $vendor_antd = $this->aiclinic_get_hashed_file('shared/chunks/vendor-antd-*.js');
+        $reset_js     = $this->aiclinic_get_hashed_file('shared/chunks/reset-*.js');
 
         if ($css_file) {
             wp_enqueue_style('ai-react-shared-css', $build_url . $css_file, [], '1.0.0');
@@ -132,10 +123,24 @@ class AI_Clinic_Search_Shortcode
                 true
             );
         }
+
+        if ($reset_js) {
+            wp_enqueue_script(
+                'ai-react-reset',
+                $build_url . $reset_js,
+                ['ai-react-vendor-react'],
+                '1.0.0',
+                true
+            );
+        }
     }
 
     /**
-     * Enqueue JS service
+     * Enqueue a specific React application bundle.
+     *
+     * @param string $app_key
+     * @param array  $config
+     * @return void
      */
     private function aiclinic_enqueue_app($app_key, $config)
     {
@@ -166,22 +171,110 @@ class AI_Clinic_Search_Shortcode
     }
 
     /**
-     * Enqueue all assets (vendor + app)
+     * Check if current post content contains a shortcode.
+     *
+     * @param string $shortcode
+     * @return bool
      */
-    public function aiclinic_enqueue_assets()
+    private function aiclinic_page_has_shortcode(string $shortcode): bool
     {
-        if (!$this->aiclinic_page_has_app()) {
+        global $post;
+
+        if (!$post || empty($post->post_content)) {
+            return false;
+        }
+
+        return preg_match('/\[' . preg_quote($shortcode, '/') . '(\s|\])/', $post->post_content);
+    }
+
+    /**
+     * Filter apps by execution context.
+     *
+     * @param string $context public|admin
+     * @return array
+     */
+    private function aiclinic_get_apps_by_context(string $context): array
+    {
+        return array_filter(
+            $this->aiclinic_get_apps_config(),
+            fn($app) => in_array($context, (array) ($app['context'] ?? 'public'), true)
+        );
+    }
+
+    /**
+     * Determine whether current public page contains any React shortcode.
+     *
+     * Used as a performance guard.
+     *
+     * @return bool
+     */
+    private function aiclinic_page_has_public_app()
+    {
+        global $post;
+        if (!isset($post->post_content)) {
+            return false;
+        }
+
+        $apps = $this->aiclinic_get_apps_config();
+        foreach ($apps as $app) {
+            if (strpos($post->post_content, '[' . $app['shortcode'] . ']') !== false) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Enqueue React assets for public pages.
+     *
+     * Loads vendor files once and app bundles based on detected shortcodes.
+     *
+     * @return void
+     */
+    public function aiclinic_enqueue_frontend_assets()
+    {
+        if (!$this->aiclinic_page_has_public_app()) {
             return;
         }
 
         $this->aiclinic_enqueue_vendors();
-        foreach ($this->aiclinic_get_active_apps() as $key => $config) {
-            $this->aiclinic_enqueue_app($key, $config);
+
+        foreach ($this->aiclinic_get_apps_by_context('public') as $key => $config) {
+            if (!empty($config['shortcode']) && $this->aiclinic_page_has_shortcode($config['shortcode'])) {
+                $this->aiclinic_enqueue_app($key, $config);
+            }
         }
     }
 
     /**
-     * Register shortcodes corresponding to each React Service
+     * Enqueue React assets for admin pages.
+     *
+     * Loads assets based on matched admin page slug.
+     *
+     * @param string $hook
+     * @return void
+     */
+    public function aiclinic_enqueue_admin_assets($hook)
+    {
+        if (!isset($_GET['page'])) {
+            return;
+        }
+
+        $current_page = sanitize_text_field($_GET['page']);
+
+        foreach ($this->aiclinic_get_apps_by_context('admin') as $key => $config) {
+            if (!empty($config['admin_page']) && $config['admin_page'] === $current_page) {
+                $this->aiclinic_enqueue_vendors();
+                $this->aiclinic_enqueue_app($key, $config);
+                break;
+            }
+        }
+    }
+
+    /**
+     * Register shortcodes for all configured React apps.
+     *
+     * @return void
      */
     public function aiclinic_register_shortcodes()
     {
