@@ -327,6 +327,7 @@ export default function App() {
 			/>
 
 			<EditClinicModal
+				key={selectedClinic?.id ?? "create"}
 				open={openModel}
 				loading={loadingModel}
 				clinic={selectedClinic}

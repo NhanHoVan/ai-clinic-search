@@ -17,6 +17,8 @@ export default function EditClinicModal({
 	React.useEffect(() => {
 		if (clinic) {
 			form.setFieldsValue(clinic);
+		} else {
+			form.resetFields();
 		}
 	}, [clinic, form]);
 
