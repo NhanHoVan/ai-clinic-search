@@ -87,6 +87,14 @@ class Ai_Clinic_Proxy_Controller
                 return current_user_can('edit_posts');
             },
         ]);
+
+        register_rest_route($namespace, '/clinic/suggest-create', [
+            'methods' => 'POST',
+            'callback' => [$this, 'suggest_create_clinic'],
+            'permission_callback' => function () {
+                return current_user_can('edit_posts');
+            },
+        ]);
     }
 
     /**
@@ -520,6 +528,47 @@ class Ai_Clinic_Proxy_Controller
         ];
 
         $result = $this->proxy_request('POST', '/clinic/update', $body, $headers);
+
+        return rest_ensure_response($result);
+    }
+
+    /**
+     * Suggest create clinic detail
+     */
+    public function suggest_create_clinic(WP_REST_Request $request)
+    {
+        $body_request = $request->get_json_params();
+
+        if (empty($body_request)) {
+            return new WP_Error('invalid_request', 'Request body is required', ['status' => 400]);
+        }
+
+        if (empty($body_request['name'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "Name" is required',
+                ['status' => 400]
+            );
+        }
+
+        if (empty($body_request['address'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "Address" is required',
+                ['status' => 400]
+            );
+        }
+
+        $body = [
+            'type' => 'suggest',
+            // TODO add param
+        ];
+
+        $headers = [
+            'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
+        ];
+
+        $result = $this->proxy_request('POST', '/clinic/create', $body, $headers);
 
         return rest_ensure_response($result);
     }
