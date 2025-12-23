@@ -1,4 +1,4 @@
-import { Form, Input } from "antd";
+import { Form, Input, Radio } from "antd";
 
 const { TextArea } = Input;
 
@@ -65,6 +65,22 @@ export default function EditClinicForm({ form, onFinish }) {
 
 			<Form.Item label="Ảnh đại diện (URL)" name="image">
 				<Input />
+			</Form.Item>
+
+			<Form.Item
+				label="Bạn là"
+				name="verifier"
+				rules={[
+					{
+						required: true,
+						message: "Vui lòng cho chúng tôi biết bạn là ai?",
+					},
+				]}
+			>
+				<Radio.Group>
+					<Radio value="owner"> Chủ/người đại diện của cơ sở </Radio>
+					<Radio value="other"> Người đóng góp thông tin </Radio>
+				</Radio.Group>
 			</Form.Item>
 		</Form>
 	);

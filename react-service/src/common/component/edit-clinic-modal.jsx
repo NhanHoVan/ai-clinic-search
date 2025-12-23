@@ -32,8 +32,8 @@ export default function EditClinicModal({
 			width={{
 				xs: "90%",
 				md: "80%",
-				lg: "70%",
-				xl: "60%",
+				lg: "60%",
+				xl: "50%",
 			}}
 			maskClosable={false}
 			style={{ top: 50 }}

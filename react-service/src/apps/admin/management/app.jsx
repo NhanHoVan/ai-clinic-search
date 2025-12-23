@@ -4,6 +4,7 @@ import { useWordPress } from "@/hooks/use-wordpress";
 import { useLocationPreference } from "@/hooks/use-location-preference";
 import SearchHeader from "@/component/search-header.jsx";
 import EditClinicModal from "@/component/edit-clinic-modal.jsx";
+import { PlusOutlined } from "@ant-design/icons";
 
 const { Title, Text } = Typography;
 
@@ -176,14 +177,36 @@ export default function App() {
 		[apiFetch, selectedClinic]
 	);
 
-	const handleUpdateClinic = async (data) => {
+	const createSuggestClinic = useCallback(
+		async (payload) => {
+			if (!payload) {
+				throw new Error("Missing required data");
+			}
+
+			return await apiFetch("/clinic/suggest-create", {
+				body: {
+					...payload,
+				},
+			});
+		},
+		[apiFetch]
+	);
+
+	const handleSubmitClinic = async (data) => {
 		try {
 			setLoadingModel(true);
-			await updateClinicDetail(data);
-			message.success("Đã gửi đề xuất chỉnh sửa");
-		} catch (err) {
-			console.error(err);
-			message.error("Gửi đề xuất thất bại");
+
+			if (selectedClinic) {
+				await updateClinicDetail(data);
+			} else {
+				await createSuggestClinic(data);
+			}
+			message.success("Gửi đề xuất thành công");
+			setOpenModel(false);
+			setSelectedClinic(null);
+			fetchClinicsRefer(page);
+		} catch (e) {
+			message.error("Có lỗi xảy ra, vui lòng thử lại");
 		} finally {
 			setLoadingModel(false);
 		}
@@ -275,6 +298,18 @@ export default function App() {
 				handleSearch={handleClinicsSearch}
 			/>
 
+			<Button
+				type="primary"
+				style={{ marginBottom: 20 }}
+				icon={<PlusOutlined />}
+				onClick={() => {
+					setSelectedClinic(null);
+					setOpenModel(true);
+				}}
+			>
+				Đề xuất thêm phòng khám
+			</Button>
+
 			<Table
 				rowKey="id"
 				columns={columns}
@@ -299,9 +334,13 @@ export default function App() {
 					setOpenModel(false);
 					setSelectedClinic(null);
 				}}
-				onSubmit={handleUpdateClinic}
-				title="Đề xuất chỉnh sửa thông tin phòng khám"
-				okeText="Gửi đề xuất"
+				onSubmit={handleSubmitClinic}
+				title={
+					selectedClinic
+						? "Đề xuất chỉnh sửa thông tin phòng khám"
+						: "Đề xuất thêm phòng khám mới"
+				}
+				okeText={selectedClinic ? "Gửi đề xuất" : "Tạo đề xuất"}
 				cancelText="Hủy"
 			/>
 		</div>
