@@ -1,12 +1,26 @@
 import { useState, useEffect, useCallback } from "react";
-import { Typography, message, Table, Button, Space } from "antd";
+import { Typography, message, Table, Button, Space, Tooltip } from "antd";
 import { useWordPress } from "@/hooks/use-wordpress";
 import { useLocationPreference } from "@/hooks/use-location-preference";
 import SearchHeader from "@/component/search-header.jsx";
 import EditClinicModal from "@/component/edit-clinic-modal.jsx";
 import { PlusOutlined } from "@ant-design/icons";
+import { getStatusIcon, getStatusTooltip } from "@/utils/utils";
+import {
+	ExclamationCircleFilled,
+	CheckCircleFilled,
+	CheckCircleTwoTone,
+} from "@ant-design/icons";
 
 const { Title, Text } = Typography;
+
+const IconMap = {
+	ExclamationCircleFilled: (
+		<ExclamationCircleFilled style={{ color: "#ff5716" }} />
+	),
+	CheckCircleFilled: <CheckCircleFilled style={{ color: "#52c41a" }} />,
+	CheckCircleTwoTone: <CheckCircleTwoTone twoToneColor="#52c41a" />,
+};
 
 export default function App() {
 	const { apiFetch } = useWordPress();
@@ -237,7 +251,19 @@ export default function App() {
 			title: "ID",
 			dataIndex: "id",
 			key: "id",
+			width: 80,
+		},
+		{
+			title: "",
+			key: "verify_status",
 			width: 50,
+			render: (_, record) => (
+				<Space>
+					<Tooltip title={getStatusTooltip(record.verify_status)}>
+						{IconMap[getStatusIcon(record.verify_status)]}
+					</Tooltip>
+				</Space>
+			),
 		},
 		{
 			title: "Tên phòng khám",
@@ -343,6 +369,7 @@ export default function App() {
 				}
 				okeText={selectedClinic ? "Gửi đề xuất" : "Tạo đề xuất"}
 				cancelText="Hủy"
+				provinces={provinces}
 			/>
 		</div>
 	);

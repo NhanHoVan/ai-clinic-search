@@ -11,6 +11,7 @@ export default function EditClinicModal({
 	title,
 	okeText,
 	cancelText,
+	provinces,
 }) {
 	const [form] = Form.useForm();
 
@@ -45,7 +46,11 @@ export default function EditClinicModal({
 				},
 			}}
 		>
-			<EditClinicForm form={form} onFinish={onSubmit} />
+			<EditClinicForm
+				form={form}
+				onFinish={onSubmit}
+				provinces={provinces}
+			/>
 		</Modal>
 	);
 }
