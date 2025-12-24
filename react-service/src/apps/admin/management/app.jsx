@@ -344,10 +344,6 @@ export default function App() {
 				okeText={selectedClinic ? "Gửi đề xuất" : "Tạo đề xuất"}
 				cancelText="Hủy"
 				provinces={provinces}
-				selectedProvince={selectedProvince}
-				selectedDistrict={selectedDistrict}
-				districts={districts}
-				onProvinceChange={handleProvinceChange}
 			/>
 		</div>
 	);

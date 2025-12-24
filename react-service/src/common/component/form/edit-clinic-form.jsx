@@ -1,33 +1,50 @@
-import { useState } from "react";
-import { Form, Input, Radio, Select } from "antd";
+import { useState, useEffect, useCallback } from "react";
+import { Form, Input, Radio, Select, message } from "antd";
+import { useWordPress } from "@/hooks/use-wordpress";
 
 const { TextArea } = Input;
 
-export default function EditClinicForm({
-	form,
-	onFinish,
-	provinces,
-	districts,
-	selectedProvince,
-	selectedDistrict,
-	onProvinceChange,
-}) {
-	const handleProvince = (value) => {
-		if (value === selectedProvince) {
-			form.setFieldsValue({
-				province: value,
-				district: selectedDistrict,
-			});
-			return;
-		}
+export default function EditClinicForm({ form, onFinish, provinces }) {
+	const { apiFetch } = useWordPress();
+	const [districts, setDistricts] = useState([]);
 
-		form.setFieldValue("district", undefined);
-		onProvinceChange(value);
+	const selectedProvince = Form.useWatch("province", form);
+
+	const fetchDistricts = useCallback(
+		async (provinceCode) => {
+			if (!provinceCode) {
+				setDistricts([]);
+				return;
+			}
+
+			try {
+				const data = await apiFetch("/districts", {
+					body: { province_code: provinceCode },
+				});
+				setDistricts(Array.isArray(data) ? data : []);
+			} catch (e) {
+				message.error(
+					e?.message || "Không thể tải danh sách quận/huyện"
+				);
+			}
+		},
+		[apiFetch]
+	);
+
+	useEffect(() => {
+		fetchDistricts(selectedProvince);
+	}, [selectedProvince, fetchDistricts]);
+
+	const handleProvinceChange = (value) => {
+		form.setFieldsValue({
+			province: value,
+			district: undefined,
+		});
 	};
+
 	return (
 		<Form
 			form={form}
-			// layout="vertical"
 			onFinish={onFinish}
 			labelCol={{ flex: "200px" }}
 			labelAlign="left"
@@ -73,7 +90,7 @@ export default function EditClinicForm({
 						label: p.name,
 						value: p.code,
 					}))}
-					onChange={handleProvince}
+					onChange={handleProvinceChange}
 					showSearch
 					optionFilterProp="label"
 					filterSort={(a, b) =>
@@ -125,7 +142,7 @@ export default function EditClinicForm({
 				name="description"
 				rules={[{ max: 500, message: "Tối đa 500 ký tự" }]}
 			>
-				<TextArea rows={4} maxLength={500} showCount />
+				<TextArea rows={3} maxLength={500} showCount />
 			</Form.Item>
 
 			<Form.Item label="Ảnh đại diện (URL)" name="image">
