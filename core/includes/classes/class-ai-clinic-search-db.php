@@ -326,7 +326,7 @@ class Ai_Clinic_Search_DB
         if (isset($data['email'])) {
             $data_to_update['email'] = sanitize_email($data['email']);
         }
-        
+
         if (isset($data['website'])) {
             $data_to_update['website'] = sanitize_url($data['website']);
         }
@@ -1834,5 +1834,169 @@ class Ai_Clinic_Search_DB
     public function aiclinic_clear_all_error_logs(): bool
     {
         return $this->helper->database->aiclinic_truncate_table('aiclinic_plugin_error_logs');
+    }
+
+    /**
+     * ============================================================================
+     * CLINIC EDIT SUGGESTIONS TABLE - CRUD OPERATIONS
+     * ============================================================================
+     */
+
+    /**
+     * Insert a new clinic edit suggestion.
+     *
+     * @param array $data {
+     *     @type int    $clinic_id        Clinic ID (required)
+     *     @type array  $suggested_fields Proposed field changes (required)
+     * }
+     *
+     * @return int|false The inserted suggestion ID or false on failure.
+     */
+    public function aiclinic_insert_clinic_edit_suggestion($data)
+    {
+        if (empty($data['clinic_id']) || empty($data['suggested_fields']) || !is_array($data['suggested_fields'])) {
+            return false;
+        }
+
+        $data_to_insert = [
+            'clinic_id'        => absint($data['clinic_id']),
+            'user_id'          => get_current_user_id() ?: null,
+            'suggested_fields' => wp_json_encode($data['suggested_fields']),
+            'status'           => 'PENDING',
+            'created_at'       => current_time('mysql'),
+        ];
+
+        $result = $this->helper->database->aiclinic_insert(
+            'aiclinic_clinic_edit_suggestions',
+            $data_to_insert
+        );
+
+        return $result ? $this->wpdb->insert_id : false;
+    }
+
+    /**
+     * Get edit suggestions by clinic ID.
+     *
+     * @param int   $clinic_id Clinic ID.
+     * @param array $args      Pagination args.
+     * @return array List of edit suggestions.
+     */
+    public function aiclinic_get_clinic_edit_suggestions_by_clinic($clinic_id, $args = [])
+    {
+        $defaults = [
+            'filters'        => ['clinic_id' => absint($clinic_id)],
+            'limit'          => 10,
+            'offset'         => 0,
+            'order_by'       => 'created_at',
+            'sort_direction' => 'DESC',
+        ];
+
+        $args = wp_parse_args($args, $defaults);
+
+        return $this->helper->database->aiclinic_get_all(
+            'aiclinic_clinic_edit_suggestions',
+            $args
+        ) ?: [];
+    }
+
+    /**
+     * Get paginated clinic edit suggestions.
+     *
+     * @param array $args Pagination arguments.
+     * @return array Paginated result.
+     */
+    public function aiclinic_get_clinic_edit_suggestions_paginated($args = [])
+    {
+        $defaults = [
+            'filters' => [],
+            'limit'   => 10,
+            'offset'  => 0,
+        ];
+
+        $args = wp_parse_args($args, $defaults);
+
+        $data = $this->helper->database->aiclinic_get_all(
+            'aiclinic_clinic_edit_suggestions',
+            $args
+        ) ?: [];
+
+        $total = $this->helper->database->aiclinic_count_record(
+            'aiclinic_clinic_edit_suggestions',
+            ['filters' => $args['filters']]
+        ) ?: 0;
+
+        return [
+            'data'     => $data,
+            'total'    => $total,
+            'filtered' => $total,
+        ];
+    }
+
+    /**
+     * Get a single clinic edit suggestion by ID.
+     *
+     * @param int $suggestion_id Suggestion ID.
+     * @return array|null Suggestion record.
+     */
+    public function aiclinic_get_clinic_edit_suggestion_by_id($suggestion_id)
+    {
+        $record = $this->helper->database->aiclinic_get_by_id(
+            'aiclinic_clinic_edit_suggestions',
+            absint($suggestion_id)
+        );
+
+        if ($record && !empty($record['suggested_fields'])) {
+            $record['suggested_fields'] = json_decode($record['suggested_fields'], true);
+        }
+
+        return $record;
+    }
+
+    /**
+     * Update clinic edit suggestion status (approve / reject).
+     *
+     * @param int   $suggestion_id Suggestion ID.
+     * @param array $data {
+     *     @type string $status        New status (APPROVED | REJECTED)
+     *     @type string $review_note   Optional review note
+     * }
+     *
+     * @return int|false Number of rows updated or false.
+     */
+    public function aiclinic_update_clinic_edit_suggestion_status($suggestion_id, $data)
+    {
+        if (empty($data['status']) || !in_array($data['status'], ['APPROVED', 'REJECTED'], true)) {
+            return false;
+        }
+
+        $data_to_update = [
+            'status'      => $data['status'],
+            'reviewed_by' => get_current_user_id(),
+            'reviewed_at' => current_time('mysql'),
+        ];
+
+        if (isset($data['review_note'])) {
+            $data_to_update['review_note'] = sanitize_textarea_field($data['review_note']);
+        }
+
+        return $this->helper->database->aiclinic_update(
+            'aiclinic_clinic_edit_suggestions',
+            $data_to_update,
+            ['id' => absint($suggestion_id)]
+        );
+    }
+
+    /**
+     * Delete a clinic edit suggestion by ID.
+     *
+     * @param int $suggestion_id Suggestion ID.
+     * @return int|false Number of rows deleted or false.
+     */
+    public function aiclinic_delete_clinic_edit_suggestion($suggestion_id)
+    {
+        return $this->helper->database->aiclinic_delete_record_by_id(
+            'aiclinic_clinic_edit_suggestions',
+            absint($suggestion_id)
+        );
     }
 }
