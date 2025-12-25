@@ -1846,9 +1846,10 @@ class Ai_Clinic_Search_DB
      * Insert a new clinic edit suggestion.
      *
      * @param array $data {
-     *     @type string $suggestion_type  CREATE | EDIT (required)
-     *     @type int    $clinic_id        Clinic ID (required)
-     *     @type array  $suggested_fields Proposed field changes (required)
+     *     @type string $suggestion_type  CREATE | EDIT
+     *     @type int    $clinic_id        Clinic ID
+     *     @type array  $suggested_fields Proposed field changes
+     *     @type string  $suggested_by Source of suggestion: OWNER | OTHER
      * }
      *
      * @return int|false The inserted suggestion ID or false on failure.
@@ -1856,6 +1857,7 @@ class Ai_Clinic_Search_DB
     public function aiclinic_insert_clinic_suggestion($data)
     {
         $suggestion_type = $data['suggestion_type'] ?? 'EDIT';
+        $suggested_by = $data['suggested_by'] ?? 'OTHER';
 
         if (!in_array($suggestion_type, ['CREATE', 'EDIT'], true)) {
             return false;
@@ -1881,6 +1883,7 @@ class Ai_Clinic_Search_DB
             'suggested_fields' => wp_json_encode($data['suggested_fields']),
             'status'           => 'PENDING',
             'created_at'       => current_time('mysql'),
+            'suggested_by'     => $suggested_by,
         ];
 
         $result = $this->helper->database->aiclinic_insert(
