@@ -79,7 +79,6 @@ class Ai_Clinic_Proxy_Controller
             },
         ]);
 
-        // TODO check
         register_rest_route($namespace, '/clinic/suggest-update', [
             'methods' => 'POST',
             'callback' => [$this, 'suggest_update_clinic'],
@@ -507,27 +506,40 @@ class Ai_Clinic_Proxy_Controller
         $body_request = $request->get_json_params();
 
         if (empty($body_request)) {
-            return new WP_Error('invalid_request', 'Request body is required', ['status' => 400]);
+            return new WP_Error(
+                'invalid_request',
+                'Request body is required',
+                ['status' => 400]
+            );
         }
 
         if (empty($body_request['id'])) {
             return new WP_Error(
                 'invalid_request',
-                'Field "ID" is required',
+                'Field "id" is required',
                 ['status' => 400]
             );
         }
 
+        $clinic_id = absint($body_request['id']);
+
+        $suggested_by = (!empty($body_request['verifier']) && $body_request['verifier'] === 'owner')
+            ? 'OWNER'
+            : 'OTHER';
+
+        $suggested_fields = $body_request;
+        unset($suggested_fields['id'], $suggested_fields['verifier']);
+
         $body = [
-            'type' => 'suggest',
-            // TODO add param
+            'suggestion_type'  => 'EDIT',
+            'clinic_id'        => $clinic_id,
+            'suggested_by'     => $suggested_by,
+            'suggested_fields' => $suggested_fields,
         ];
 
-        $headers = [
-            'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
-        ];
+        $headers = ['Content-Type' => 'application/json'];
 
-        $result = $this->proxy_request('POST', '/clinic/update', $body, $headers);
+        $result = $this->proxy_request('POST', '/clinic/suggestions', $body, $headers);
 
         return rest_ensure_response($result);
     }
@@ -540,13 +552,17 @@ class Ai_Clinic_Proxy_Controller
         $body_request = $request->get_json_params();
 
         if (empty($body_request)) {
-            return new WP_Error('invalid_request', 'Request body is required', ['status' => 400]);
+            return new WP_Error(
+                'invalid_request',
+                'Request body is required',
+                ['status' => 400]
+            );
         }
 
         if (empty($body_request['name'])) {
             return new WP_Error(
                 'invalid_request',
-                'Field "Name" is required',
+                'Field "name" is required',
                 ['status' => 400]
             );
         }
@@ -554,21 +570,29 @@ class Ai_Clinic_Proxy_Controller
         if (empty($body_request['address'])) {
             return new WP_Error(
                 'invalid_request',
-                'Field "Address" is required',
+                'Field "address" is required',
                 ['status' => 400]
             );
         }
 
+        $suggested_by = (!empty($body_request['verifier']) && $body_request['verifier'] === 'owner')
+            ? 'OWNER'
+            : 'OTHER';
+
+        $suggested_fields = $body_request;
+        unset($suggested_fields['verifier']);
+
         $body = [
-            'type' => 'suggest',
-            // TODO add param
+            'suggestion_type'  => 'CREATE',
+            'suggested_by'     => $suggested_by,
+            'suggested_fields' => $suggested_fields,
         ];
 
         $headers = [
             'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
         ];
 
-        $result = $this->proxy_request('POST', '/clinic/create', $body, $headers);
+        $result = $this->proxy_request('POST', '/clinic/suggestions', $body, $headers);
 
         return rest_ensure_response($result);
     }
