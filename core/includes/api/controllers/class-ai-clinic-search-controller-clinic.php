@@ -257,4 +257,185 @@ class Ai_Clinic_Controller_Clinic
 
         return $existing;
     }
+
+    /**
+     * Create a clinic suggestion (CREATE or EDIT).
+     *
+     * @param WP_REST_Request $request Incoming REST request containing:
+     *     @type string       $suggestion_type  Suggestion type: CREATE | EDIT
+     *     @type int|null     $clinic_id        Required when suggestion_type is EDIT
+     *     @type string|null  $suggested_by     Source of suggestion: OWNER | OTHER
+     *     @type array        $suggested_fields Proposed clinic data
+     *
+     * @return WP_REST_Response|WP_Error
+     *     On success:
+     *     @type bool   $success
+     *     @type int    $suggestion_id
+     *     @type string $status           PENDING
+     *
+     *     On failure:
+     *     WP_Error with appropriate status code
+     */
+    public function create_clinic_suggestion(WP_REST_Request $request)
+    {
+        $params = $request->get_json_params();
+
+        $suggestion_type = $params['suggestion_type'] ?? null;
+        if (!in_array($suggestion_type, ['CREATE', 'EDIT'], true)) {
+            return new WP_Error(
+                'invalid_suggestion_type',
+                'Invalid suggestion_type',
+                ['status' => 400]
+            );
+        }
+
+        if (
+            empty($params['suggested_fields']) ||
+            !is_array($params['suggested_fields'])
+        ) {
+            return new WP_Error(
+                'invalid_suggested_fields',
+                'suggested_fields is required',
+                ['status' => 400]
+            );
+        }
+
+        if ($suggestion_type === 'EDIT') {
+            if (empty($params['clinic_id'])) {
+                return new WP_Error(
+                    'missing_clinic_id',
+                    'clinic_id is required for EDIT suggestion',
+                    ['status' => 400]
+                );
+            }
+
+            // TODO check clinic tồn tại
+            $clinicIsExists = true;
+            if (!$clinicIsExists) {
+                return new WP_Error(
+                    'clinic_not_found',
+                    'Clinic does not exist',
+                    ['status' => 404]
+                );
+            }
+        }
+
+        if ($suggestion_type === 'CREATE') {
+            if (
+                empty($params['suggested_fields']['name']) ||
+                empty($params['suggested_fields']['address'])
+            ) {
+                return new WP_Error(
+                    'missing_required_fields',
+                    'name and address are required for CREATE suggestion',
+                    ['status' => 400]
+                );
+            }
+        }
+
+        $data = [
+            'suggestion_type'  => $suggestion_type,
+            'clinic_id'        => $suggestion_type === 'EDIT'
+                ? (int)$params['clinic_id']
+                : null,
+            'suggested_by'     => $params['suggested_by'] ?? 'OTHER',
+            'suggested_fields' => $this->sanitize_suggested_fields(
+                $params['suggested_fields']
+            ),
+        ];
+
+        // TODO Call service
+        $suggestion_id = "";
+
+        if (!$suggestion_id) {
+            return new WP_Error(
+                'create_failed',
+                'Failed to create clinic suggestion',
+                ['status' => 500]
+            );
+        }
+
+        return rest_ensure_response([
+            'success'       => true,
+            'suggestion_id' => $suggestion_id,
+            'status'        => 'PENDING',
+        ]);
+    }
+
+    /**
+     * Sanitize suggested clinic fields before storing them as a suggestion.
+     *
+     * @param array $fields Raw suggested fields received from the proxy API.
+     *     @type string $place_id
+     *     @type string $name
+     *     @type string $address
+     *     @type string $province
+     *     @type string $district
+     *     @type string $phone
+     *     @type string $email
+     *     @type string $website
+     *     @type string $description
+     *     @type string $image
+     *
+     * @return array Sanitized suggested fields, containing only allowed keys.
+     */
+    private function sanitize_suggested_fields(array $fields): array
+    {
+        $sanitized = [];
+
+        foreach (self::ALLOWED_SUGGEST_FIELDS as $key) {
+            if (!array_key_exists($key, $fields)) {
+                continue;
+            }
+
+            $value = $fields[$key];
+
+            switch ($key) {
+                case 'name':
+                case 'address':
+                    $sanitized[$key] = sanitize_text_field($value);
+                    break;
+
+                case 'description':
+                    $sanitized[$key] = sanitize_textarea_field($value);
+                    break;
+
+                case 'email':
+                    $sanitized[$key] = sanitize_email($value);
+                    break;
+
+                case 'website':
+                case 'image':
+                    $sanitized[$key] = esc_url_raw($value);
+                    break;
+
+                case 'phone':
+                    $sanitized[$key] = preg_replace('/[^0-9+\s]/', '', (string) $value);
+                    break;
+
+                case 'province':
+                case 'district':
+                    $sanitized[$key] = (string) $value;
+                    break;
+
+                case 'place_id':
+                    $sanitized[$key] = sanitize_text_field($value);
+                    break;
+            }
+        }
+        return $sanitized;
+    }
+
+    private const ALLOWED_SUGGEST_FIELDS = [
+        'place_id',
+        'name',
+        'address',
+        'province',
+        'district',
+        'phone',
+        'email',
+        'website',
+        'description',
+        'image',
+    ];
 }
