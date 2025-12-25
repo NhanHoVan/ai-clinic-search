@@ -77,3 +77,22 @@ CREATE TABLE IF NOT EXISTS wp_aiclinic_reviews (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Review submission time',
     FOREIGN KEY (clinic_id) REFERENCES wp_aiclinic_clinics(id) ON DELETE CASCADE
 ) {CHARSET_COLLATE};
+
+-- Table for storing suggest clinic information
+CREATE TABLE IF NOT EXISTS wp_aiclinic_clinic_suggestions (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'Unique identifier for the edit suggestion',
+    suggestion_type ENUM('CREATE', 'EDIT') NOT NULL DEFAULT 'EDIT' COMMENT 'Type of suggestion',
+    clinic_id BIGINT UNSIGNED NULL COMMENT 'Referenced clinic ID (NULL for CREATE suggestion)',
+    user_id BIGINT UNSIGNED NULL COMMENT 'User who suggested the edit',
+    suggested_fields JSON NOT NULL COMMENT 'Proposed clinic field changes in JSON format',
+    status ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING' COMMENT 'Review status of the edit suggestion',
+    reviewed_by BIGINT UNSIGNED NULL COMMENT 'Admin who reviewed the suggestion',
+    review_note TEXT COMMENT 'Review note or rejection reason',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Suggestion creation time',
+    reviewed_at DATETIME NULL COMMENT 'Suggestion review time',
+    suggested_by ENUM('OWNER', 'OTHER') NOT NULL DEFAULT 'OTHER' COMMENT 'Source of suggestion: clinic owner or other user'
+    INDEX idx_clinic_suggestion_clinic_status (clinic_id, status),
+    INDEX idx_clinic_suggestion_user (user_id),
+    CONSTRAINT fk_clinic_suggestion_clinic
+    FOREIGN KEY (clinic_id) REFERENCES wp_aiclinic_clinics(id) ON DELETE CASCADE
+) {CHARSET_COLLATE};
