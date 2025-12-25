@@ -78,9 +78,11 @@ CREATE TABLE IF NOT EXISTS wp_aiclinic_reviews (
     FOREIGN KEY (clinic_id) REFERENCES wp_aiclinic_clinics(id) ON DELETE CASCADE
 ) {CHARSET_COLLATE};
 
-CREATE TABLE IF NOT EXISTS wp_aiclinic_clinic_edit_suggestions (
+-- Table for storing suggest clinic information
+CREATE TABLE IF NOT EXISTS wp_aiclinic_clinic_suggestions (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY COMMENT 'Unique identifier for the edit suggestion',
-    clinic_id BIGINT UNSIGNED NOT NULL COMMENT 'Referenced clinic ID',
+    suggestion_type ENUM('CREATE', 'EDIT') NOT NULL DEFAULT 'EDIT' COMMENT 'Type of suggestion',
+    clinic_id BIGINT UNSIGNED NULL COMMENT 'Referenced clinic ID (NULL for CREATE suggestion)',
     user_id BIGINT UNSIGNED NULL COMMENT 'User who suggested the edit',
     suggested_fields JSON NOT NULL COMMENT 'Proposed clinic field changes in JSON format',
     status ENUM('PENDING', 'APPROVED', 'REJECTED') NOT NULL DEFAULT 'PENDING' COMMENT 'Review status of the edit suggestion',
@@ -90,6 +92,6 @@ CREATE TABLE IF NOT EXISTS wp_aiclinic_clinic_edit_suggestions (
     reviewed_at DATETIME NULL COMMENT 'Suggestion review time',
     INDEX idx_clinic_suggestion_clinic_status (clinic_id, status),
     INDEX idx_clinic_suggestion_user (user_id),
-    CONSTRAINT fk_clinic_edit_suggestion_clinic
+    CONSTRAINT fk_clinic_suggestion_clinic
     FOREIGN KEY (clinic_id) REFERENCES wp_aiclinic_clinics(id) ON DELETE CASCADE
 ) {CHARSET_COLLATE};
