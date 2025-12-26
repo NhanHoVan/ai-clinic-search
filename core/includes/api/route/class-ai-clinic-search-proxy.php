@@ -79,7 +79,6 @@ class Ai_Clinic_Proxy_Controller
             },
         ]);
 
-        // TODO check
         register_rest_route($namespace, '/clinic/suggest-update', [
             'methods' => 'POST',
             'callback' => [$this, 'suggest_update_clinic'],
@@ -156,12 +155,13 @@ class Ai_Clinic_Proxy_Controller
     /**
      * Proxy GET request with cache support
      * 
+     * @param string $base
      * @param string $endpoint
      * @param array $params
      * @param array $headers
      * @return array|WP_Error
      */
-    private function proxy_get($endpoint, $params = [], $headers = [])
+    private function proxy_get($base, $endpoint, $params = [], $headers = [])
     {
         $rate_check = $this->check_rate_limit($endpoint);
         if (is_wp_error($rate_check)) {
@@ -174,7 +174,7 @@ class Ai_Clinic_Proxy_Controller
             return $cached;
         }
 
-        $api_base = Ai_Clinic_REST_Register::get_base(Ai_Clinic_REST_Register::GROUP_PUBLIC);
+        $api_base = Ai_Clinic_REST_Register::get_base($base);
         $url = rest_url(ltrim($api_base . $endpoint, '/'));
 
         if (!empty($params)) {
@@ -224,20 +224,21 @@ class Ai_Clinic_Proxy_Controller
     /**
      * Proxy POST/PUT/DELETE request
      * 
+     * @param string $base
      * @param string $method
      * @param string $endpoint
      * @param array $body
      * @param array $headers
      * @return array|WP_Error
      */
-    private function proxy_request($method, $endpoint, $body = [], $headers = [])
+    private function proxy_request($base, $method, $endpoint, $body = [], $headers = [])
     {
         $rate_check = $this->check_rate_limit($endpoint);
         if (is_wp_error($rate_check)) {
             return $rate_check;
         }
 
-        $api_base = Ai_Clinic_REST_Register::get_base(Ai_Clinic_REST_Register::GROUP_PUBLIC);
+        $api_base = Ai_Clinic_REST_Register::get_base($base);
         $url = rest_url(ltrim($api_base . $endpoint, '/'));
 
         $default_headers = [
@@ -303,7 +304,11 @@ class Ai_Clinic_Proxy_Controller
             $params['search'] = sanitize_text_field($search);
         }
 
-        $result = $this->proxy_get('/provinces', $params);
+        $result = $this->proxy_get(
+            Ai_Clinic_REST_Register::GROUP_PUBLIC,
+            '/provinces',
+            $params
+        );
 
         return rest_ensure_response($result);
     }
@@ -335,7 +340,11 @@ class Ai_Clinic_Proxy_Controller
             $params['search'] = sanitize_text_field($body['search']);
         }
 
-        $result = $this->proxy_get('/districts', $params);
+        $result = $this->proxy_get(
+            Ai_Clinic_REST_Register::GROUP_PUBLIC,
+            '/districts',
+            $params
+        );
 
         return rest_ensure_response($result);
     }
@@ -352,7 +361,11 @@ class Ai_Clinic_Proxy_Controller
             $params['search'] = sanitize_text_field($search);
         }
 
-        $result = $this->proxy_get('/specialties', $params);
+        $result = $this->proxy_get(
+            Ai_Clinic_REST_Register::GROUP_PUBLIC,
+            '/specialties',
+            $params
+        );
 
         return rest_ensure_response($result);
     }
@@ -402,7 +415,13 @@ class Ai_Clinic_Proxy_Controller
             'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
         ];
 
-        $result = $this->proxy_request('POST', '/clinics/search', $body, $headers);
+        $result = $this->proxy_request(
+            Ai_Clinic_REST_Register::GROUP_PUBLIC,
+            'POST',
+            '/clinics/search',
+            $body,
+            $headers
+        );
 
         return rest_ensure_response($result);
     }
@@ -445,7 +464,13 @@ class Ai_Clinic_Proxy_Controller
             'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
         ];
 
-        $result = $this->proxy_request('POST', '/clinics', $body, $headers);
+        $result = $this->proxy_request(
+            Ai_Clinic_REST_Register::GROUP_PUBLIC,
+            'POST',
+            '/clinics',
+            $body,
+            $headers
+        );
 
         return rest_ensure_response($result);
     }
@@ -494,7 +519,11 @@ class Ai_Clinic_Proxy_Controller
             $params['id'] = sanitize_text_field($id);
         }
 
-        $result = $this->proxy_get('/clinic', $params);
+        $result = $this->proxy_get(
+            Ai_Clinic_REST_Register::GROUP_ADMIN,
+            '/clinic',
+            $params
+        );
 
         return rest_ensure_response($result);
     }
@@ -507,27 +536,46 @@ class Ai_Clinic_Proxy_Controller
         $body_request = $request->get_json_params();
 
         if (empty($body_request)) {
-            return new WP_Error('invalid_request', 'Request body is required', ['status' => 400]);
+            return new WP_Error(
+                'invalid_request',
+                'Request body is required',
+                ['status' => 400]
+            );
         }
 
         if (empty($body_request['id'])) {
             return new WP_Error(
                 'invalid_request',
-                'Field "ID" is required',
+                'Field "id" is required',
                 ['status' => 400]
             );
         }
 
+        $clinic_id = absint($body_request['id']);
+
+        $suggested_by = (!empty($body_request['verifier']) && $body_request['verifier'] === 'owner')
+            ? 'OWNER'
+            : 'OTHER';
+
+        $suggested_fields = $body_request;
+        unset($suggested_fields['id'], $suggested_fields['verifier']);
+
         $body = [
-            'type' => 'suggest',
-            // TODO add param
+            'suggestion_type'  => 'EDIT',
+            'clinic_id'        => $clinic_id,
+            'suggested_by'     => $suggested_by,
+            'suggested_fields' => $suggested_fields,
         ];
 
-        $headers = [
-            'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
-        ];
+        $headers = ['Content-Type' => 'application/json'];
 
-        $result = $this->proxy_request('POST', '/clinic/update', $body, $headers);
+        $result = $this->proxy_request(
+            Ai_Clinic_REST_Register::GROUP_ADMIN,
+            'POST',
+            '/clinic/suggestions',
+            $body,
+            $headers
+        );
 
         return rest_ensure_response($result);
     }
@@ -540,13 +588,17 @@ class Ai_Clinic_Proxy_Controller
         $body_request = $request->get_json_params();
 
         if (empty($body_request)) {
-            return new WP_Error('invalid_request', 'Request body is required', ['status' => 400]);
+            return new WP_Error(
+                'invalid_request',
+                'Request body is required',
+                ['status' => 400]
+            );
         }
 
         if (empty($body_request['name'])) {
             return new WP_Error(
                 'invalid_request',
-                'Field "Name" is required',
+                'Field "name" is required',
                 ['status' => 400]
             );
         }
@@ -554,21 +606,35 @@ class Ai_Clinic_Proxy_Controller
         if (empty($body_request['address'])) {
             return new WP_Error(
                 'invalid_request',
-                'Field "Address" is required',
+                'Field "address" is required',
                 ['status' => 400]
             );
         }
 
+        $suggested_by = (!empty($body_request['verifier']) && $body_request['verifier'] === 'owner')
+            ? 'OWNER'
+            : 'OTHER';
+
+        $suggested_fields = $body_request;
+        unset($suggested_fields['verifier']);
+
         $body = [
-            'type' => 'suggest',
-            // TODO add param
+            'suggestion_type'  => 'CREATE',
+            'suggested_by'     => $suggested_by,
+            'suggested_fields' => $suggested_fields,
         ];
 
         $headers = [
             'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
         ];
 
-        $result = $this->proxy_request('POST', '/clinic/create', $body, $headers);
+        $result = $this->proxy_request(
+            Ai_Clinic_REST_Register::GROUP_ADMIN,
+            'POST',
+            '/clinic/suggestions',
+            $body,
+            $headers
+        );
 
         return rest_ensure_response($result);
     }

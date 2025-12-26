@@ -33,7 +33,8 @@ class Ai_Clinic_REST_Register
         (new Ai_Clinic_REST_Public())->register_routes();
 
         // Admin routes
-        // TODO
+        require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/route/class-ai-clinic-search-rest-admin.php';
+        (new Ai_Clinic_REST_Admin())->register_routes();
     }
 
     /**
