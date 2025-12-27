@@ -167,34 +167,6 @@ class Ai_Clinic_Controller_Clinic
     }
 
     /**
-     * Check if clinic already exists in DB.
-     *
-     * @param array $clinic Clinic data from AI
-     * @param object $database Your database object
-     * @return array|null Returns clinic data that already exists, or null if not yet exists
-     */
-    private function checkClinicExists($clinic)
-    {
-        $existing = null;
-        if (!empty($clinic['phone'])) {
-            $phone = $this->helper->phone_number->normalize_phone($clinic['phone']);
-            $existing = $this->database->aiclinic_get_clinics_by_phone($phone);
-            if (!empty($existing)) {
-                return $existing[0];
-            }
-        }
-
-        if (!empty($clinic['name'])) {
-            $existing = $this->database->aiclinic_get_clinics_by_name_and_province($clinic['name'], $clinic['province']);
-            if (!empty($existing)) {
-                return $existing[0];
-            }
-        }
-
-        return $existing;
-    }
-
-    /**
      * Create a clinic suggestion (CREATE or EDIT).
      *
      * @param WP_REST_Request $request Incoming REST request containing:
