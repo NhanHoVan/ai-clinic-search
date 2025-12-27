@@ -247,4 +247,21 @@ class Ai_Clinic_Service_Clinic
 
         return $existing;
     }
+
+    /**
+     * Check whether a clinic exists by ID.
+     *
+     * @param int $clinic_id
+     * @return bool True if clinic exists, false otherwise.
+     */
+    public function clinic_exists(int $clinic_id): bool
+    {
+        if ($clinic_id <= 0) {
+            return false;
+        }
+
+        $clinic = $this->database->aiclinic_get_clinic_by_id($clinic_id);
+
+        return !empty($clinic);
+    }
 }
