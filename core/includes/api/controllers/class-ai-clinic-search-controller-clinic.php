@@ -31,6 +31,11 @@ class Ai_Clinic_Controller_Clinic
     private $clinic_service;
 
     /**
+     * @var Ai_Clinic_Service_Clinic_Suggest Clinic instance
+     */
+    private $clinic_suggest_service;
+
+    /**
      * helper
      *
      * @var		Ai_Clinic_Search_Helpers
@@ -43,6 +48,7 @@ class Ai_Clinic_Controller_Clinic
         $this->location_service = new Ai_Clinic_Service_Location();
         $this->database = new Ai_Clinic_Search_DB();
         $this->clinic_service = new Ai_Clinic_Service_Clinic();
+        $this->clinic_suggest_service = new Ai_Clinic_Service_Clinic_Suggest();
         $this->helper = new Ai_Clinic_Search_Helpers();
     }
 
@@ -217,8 +223,7 @@ class Ai_Clinic_Controller_Clinic
                 );
             }
 
-            // TODO check clinic tồn tại
-            $clinicIsExists = true;
+            $clinicIsExists = $this->clinic_service->clinic_exists((int) $params['clinic_id']);
             if (!$clinicIsExists) {
                 return new WP_Error(
                     'clinic_not_found',
@@ -252,9 +257,7 @@ class Ai_Clinic_Controller_Clinic
             ),
         ];
 
-        // TODO Call service
-        $suggestion_id = "";
-
+        $suggestion_id = $this->clinic_suggest_service->create_clinic_suggestion($data);
         if (!$suggestion_id) {
             return new WP_Error(
                 'create_failed',

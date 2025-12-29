@@ -174,6 +174,7 @@ if (! class_exists('Ai_Clinic_Search')) :
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/route/class-ai-clinic-search-rest-register.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/services/class-ai-clinic-search-service-ai.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/services/class-ai-clinic-search-service-clinic.php';
+			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/services/class-ai-clinic-search-service-clinic-suggest.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/services/class-ai-clinic-search-service-google-places.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/services/class-ai-clinic-search-service-google-search.php';
 			require_once CLINIC_SEARCH_PLUGIN_DIR . 'core/includes/api/services/class-ai-clinic-search-service-location.php';
