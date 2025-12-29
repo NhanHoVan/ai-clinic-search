@@ -181,9 +181,14 @@ class Ai_Clinic_Proxy_Controller
             $url = add_query_arg($params, $url);
         }
 
+        $user_id = get_current_user_id();
         $default_headers = [
             'X-APP-KEY' => $this->get_api_key(),
         ];
+        if ($base === Ai_Clinic_REST_Register::GROUP_ADMIN && $user_id > 0) {
+            $default_headers['X-INTERNAL-USER-ID'] = $user_id;
+            $default_headers['X-INTERNAL-SOURCE']  = AI_CLINIC_SEARCH_INTERNAL_SOURCE;
+        }
         $headers = array_merge($default_headers, $headers);
 
         $response = wp_remote_get($url, [
@@ -241,9 +246,14 @@ class Ai_Clinic_Proxy_Controller
         $api_base = Ai_Clinic_REST_Register::get_base($base);
         $url = rest_url(ltrim($api_base . $endpoint, '/'));
 
+        $user_id = get_current_user_id();
         $default_headers = [
             'X-APP-KEY' => $this->get_api_key(),
         ];
+        if ($base === Ai_Clinic_REST_Register::GROUP_ADMIN && $user_id > 0) {
+            $default_headers['X-INTERNAL-USER-ID'] = $user_id;
+            $default_headers['X-INTERNAL-SOURCE']  = AI_CLINIC_SEARCH_INTERNAL_SOURCE;
+        }
         $headers = array_merge($default_headers, $headers);
 
         $content_type = isset($headers['Content-Type']) ? $headers['Content-Type'] : 'application/json';

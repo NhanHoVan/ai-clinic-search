@@ -192,6 +192,12 @@ class Ai_Clinic_Controller_Clinic
      */
     public function create_clinic_suggestion(WP_REST_Request $request)
     {
+        $source = $request->get_header('X-INTERNAL-SOURCE');
+        $user_id = null;
+        if ($source === AI_CLINIC_SEARCH_INTERNAL_SOURCE) {
+            $user_id = absint($request->get_header('X-INTERNAL-USER-ID'));
+        }
+
         $params = $request->get_json_params();
 
         $suggestion_type = $params['suggestion_type'] ?? null;
@@ -251,6 +257,7 @@ class Ai_Clinic_Controller_Clinic
             'clinic_id'        => $suggestion_type === 'EDIT'
                 ? (int)$params['clinic_id']
                 : null,
+            'user_id'          => $user_id,
             'suggested_by'     => $params['suggested_by'] ?? 'OTHER',
             'suggested_fields' => $this->sanitize_suggested_fields(
                 $params['suggested_fields']

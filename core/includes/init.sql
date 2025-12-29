@@ -90,9 +90,7 @@ CREATE TABLE IF NOT EXISTS wp_aiclinic_clinic_suggestions (
     review_note TEXT COMMENT 'Review note or rejection reason',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Suggestion creation time',
     reviewed_at DATETIME NULL COMMENT 'Suggestion review time',
-    suggested_by ENUM('OWNER', 'OTHER') NOT NULL DEFAULT 'OTHER' COMMENT 'Source of suggestion: clinic owner or other user'
+    suggested_by ENUM('OWNER', 'OTHER') NOT NULL DEFAULT 'OTHER' COMMENT 'Source of suggestion: clinic owner or other user',
     INDEX idx_clinic_suggestion_clinic_status (clinic_id, status),
-    INDEX idx_clinic_suggestion_user (user_id),
-    CONSTRAINT fk_clinic_suggestion_clinic
     FOREIGN KEY (clinic_id) REFERENCES wp_aiclinic_clinics(id) ON DELETE CASCADE
 ) {CHARSET_COLLATE};

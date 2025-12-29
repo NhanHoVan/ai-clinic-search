@@ -1874,12 +1874,16 @@ class Ai_Clinic_Search_DB
             return false;
         }
 
+        if (empty($data['user_id'])) {
+            return false;
+        }
+
         $data_to_insert = [
             'suggestion_type' => $suggestion_type,
             'clinic_id'       => $suggestion_type === 'EDIT'
                 ? absint($data['clinic_id'])
                 : null,
-            'user_id'          => get_current_user_id() ?: null,
+            'user_id'          => $data['user_id'],
             'suggested_fields' => wp_json_encode($data['suggested_fields']),
             'status'           => 'PENDING',
             'created_at'       => current_time('mysql'),
@@ -1996,9 +2000,13 @@ class Ai_Clinic_Search_DB
             return false;
         }
 
+        if (empty($data['user_id'])) {
+            return false;
+        }
+
         $data_to_update = [
             'status'      => $data['status'],
-            'reviewed_by' => get_current_user_id(),
+            'reviewed_by' => $data['user_id'],
             'reviewed_at' => current_time('mysql'),
         ];
 

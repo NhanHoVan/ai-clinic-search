@@ -53,8 +53,8 @@ class Ai_Clinic_Permissions
     public static function check_internal_api_key(WP_REST_Request $request)
     {
         $api_key = $request->get_header('X-APP-KEY');
-        $valid_key = defined('AI_CLINIC_SEARCH_INTERNAL_API_KEY') 
-            ? AI_CLINIC_SEARCH_INTERNAL_API_KEY 
+        $valid_key = defined('AI_CLINIC_SEARCH_INTERNAL_API_KEY')
+            ? AI_CLINIC_SEARCH_INTERNAL_API_KEY
             : get_option('ai_clinic_search_internal_api_key', '');
 
         if (empty($valid_key) || $api_key !== $valid_key) {
@@ -63,6 +63,19 @@ class Ai_Clinic_Permissions
                 'Invalid or missing API key',
                 ['status' => 401]
             );
+        }
+
+        $source = $request->get_header('X-INTERNAL-SOURCE');
+        if ($source === AI_CLINIC_SEARCH_INTERNAL_SOURCE) {
+            $user_id = absint($request->get_header('X-INTERNAL-USER-ID'));
+
+            if ($user_id <= 0) {
+                return new WP_Error(
+                    'unauthorized',
+                    'Missing internal user',
+                    ['status' => 401]
+                );
+            }
         }
 
         return true;
