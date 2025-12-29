@@ -218,7 +218,7 @@ export default function App() {
 			message.success("Gửi đề xuất thành công");
 			setOpenModel(false);
 			setSelectedClinic(null);
-			fetchClinicsRefer(page);
+			loadClinics({ page: page, search: searchText });
 		} catch (e) {
 			message.error("Có lỗi xảy ra, vui lòng thử lại");
 		} finally {

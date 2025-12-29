@@ -39,6 +39,7 @@ export function useWordPress() {
 				method: normalizedMethod,
 				headers,
 				signal,
+				credentials: "include",
 				...restOptions,
 			};
 
