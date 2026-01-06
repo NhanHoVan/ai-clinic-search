@@ -70,7 +70,6 @@ class Ai_Clinic_Proxy_Controller
             },
         ]);
 
-        // TODO check
         register_rest_route($namespace, '/clinic', [
             'methods' => 'GET',
             'callback' => [$this, 'get_clinic'],
@@ -522,11 +521,18 @@ class Ai_Clinic_Proxy_Controller
      */
     public function get_clinic(WP_REST_Request $request)
     {
-        $id = $request->get_param('id');
         $params = [];
 
-        if (!empty($id)) {
-            $params['id'] = sanitize_text_field($id);
+        $id = $request->get_param('id');
+        if ($id === null) {
+            $id = $request->get_param('params');
+            if (is_string($id)) {
+                $id = trim($id, '"');
+            }
+        }
+
+        if ($id !== null) {
+            $params['id'] = absint($id);
         }
 
         $result = $this->proxy_get(

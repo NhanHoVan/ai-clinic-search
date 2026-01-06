@@ -126,6 +126,33 @@ class Ai_Clinic_Controller_Clinic
     }
 
     /**
+     * GET ai-clinic-search/clinic
+     */
+    public function get_clinic_by_id($request)
+    {
+        $source = $request->get_header('X-INTERNAL-SOURCE');
+        $user_id = null;
+        if ($source === AI_CLINIC_SEARCH_INTERNAL_SOURCE) {
+            $user_id = absint($request->get_header('X-INTERNAL-USER-ID'));
+        }
+
+        $clinic_id = sanitize_text_field($request->get_param('id'));
+
+        if (empty($clinic_id)) {
+            return new WP_Error(
+                'invalid_id',
+                'id is required',
+                ['status' => 400]
+            );
+        }
+
+        $clinic_id = absint($clinic_id);
+        $result = $this->database->aiclinic_get_clinic_by_id($clinic_id);
+
+        return new WP_REST_Response($result, 200);
+    }
+
+    /**
      * Handle clinic search request and return matched clinics.
      *
      * Route: POST ai-clinic-search/clinics/search
