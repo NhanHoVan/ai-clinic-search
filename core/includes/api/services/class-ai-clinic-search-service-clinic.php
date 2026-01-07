@@ -285,6 +285,7 @@ class Ai_Clinic_Service_Clinic
                 'email'       => $this->maskEmail($clinic['email'] ?? ''),
                 'website'     => $clinic['website'] ?? '',
                 'verify_status' => $clinic['verify_status'] ?? '',
+                'is_active'     => $clinic['is_active'] ?? '',
             ];
         }, $clinics);
     }
