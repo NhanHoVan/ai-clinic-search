@@ -115,13 +115,16 @@ class Ai_Clinic_Controller_Clinic
             'district' => $body['district'],
             'limit'    => $body['limit'],
             'offset'   => $offset,
+            'is_active' => 'ACTIVE',
         ]);
+
+        $clinics_filtered = $this->clinic_service->filter_and_mask_clinics($result['data'] ?? []);
 
         return new WP_REST_Response([
             'success' => true,
             'page'    => $body['page'],
             'total'   => $result['filtered'] ?? 0,
-            'clinics' => $result['data'] ?? [],
+            'clinics' => $clinics_filtered,
         ], 200);
     }
 

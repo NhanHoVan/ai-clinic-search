@@ -264,4 +264,57 @@ class Ai_Clinic_Service_Clinic
 
         return !empty($clinic);
     }
+
+    /**
+     * Filter and mask clinic data for API response
+     *
+     * @param array $clinics List of clinics
+     * @return array Filtered and masked clinic data
+     */
+    public function filter_and_mask_clinics(array $clinics): array
+    {
+        return array_map(function ($clinic) {
+            return [
+                'id'          => $clinic['id'] ?? '',
+                'name'        => $clinic['name'] ?? '',
+                'description' => $clinic['description'] ?? '',
+                'address'     => $clinic['address'] ?? '',
+                'province'    => $clinic['province'] ?? '',
+                'district'    => $clinic['district'] ?? '',
+                'phone'       => $this->maskPhone($clinic['phone'] ?? ''),
+                'email'       => $this->maskEmail($clinic['email'] ?? ''),
+                'website'     => $clinic['website'] ?? '',
+                'verify_status' => $clinic['verify_status'] ?? '',
+                'is_active'     => $clinic['is_active'] ?? '',
+            ];
+        }, $clinics);
+    }
+
+    /**
+     * Mask phone number
+     *
+     * @param string $phone
+     * @return string
+     */
+    private function maskPhone(string $phone): string
+    {
+        if ($phone === "") return "";
+        $s = (string) $phone;
+        if (strlen($s) <= 7) return $s;
+        $first3 = substr($s, 0, 3);
+        $last4  = substr($s, -4);
+        return "{$first3} *** {$last4}";
+    }
+
+    /**
+     * Mask email
+     *
+     * @param string $email
+     * @return string
+     */
+    private function maskEmail(string $email): string
+    {
+        if (!$email) return "";
+        return preg_replace("/^(.{2}).+(@.+)$/", "$1***$2", $email);
+    }
 }
