@@ -16,7 +16,7 @@ class Ai_Clinic_REST_Admin
 
         // get_clinic_by_id
         register_rest_route($base, '/clinic', [
-            'methods' => 'POST',
+            'methods' => 'GET',
             'callback' => [$clinic_controller, 'get_clinic_by_id'],
             'permission_callback' => [Ai_Clinic_Permissions::class, 'check_internal_api_key'],
         ]);
