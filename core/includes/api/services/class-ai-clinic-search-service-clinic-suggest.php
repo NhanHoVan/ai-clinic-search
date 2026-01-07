@@ -44,4 +44,40 @@ class Ai_Clinic_Service_Clinic_Suggest
     {
         return $this->database->aiclinic_insert_clinic_suggestion($data);
     }
+
+    /**
+     * Map clinics for management-user: Add the `is_disable` field based on PENDING suggestions.
+     *
+     * @param array $clinics List of clinics
+     * @return array
+     */
+    public function map_user_clinics_with_suggestions(array $clinics): array
+    {
+        if (empty($clinics)) {
+            return [];
+        }
+
+        foreach ($clinics as &$clinic) {
+            $clinic_id = $clinic['id'] ?? 0;
+
+            if (!$clinic_id) {
+                $clinic['is_disable'] = false;
+                continue;
+            }
+
+            $suggestions = $this->database->aiclinic_get_clinic_suggestions_by_clinic($clinic_id);
+
+            $has_pending = false;
+            foreach ($suggestions as $sugg) {
+                if (!empty($sugg['status']) && $sugg['status'] === 'PENDING') {
+                    $has_pending = true;
+                    break;
+                }
+            }
+
+            $clinic['is_disable'] = $has_pending;
+        }
+
+        return $clinics;
+    }
 }
