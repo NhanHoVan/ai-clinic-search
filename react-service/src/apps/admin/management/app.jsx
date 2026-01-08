@@ -80,6 +80,7 @@ export default function App() {
 					search,
 					page,
 					limit,
+					type: "management-user",
 				},
 			});
 
@@ -167,7 +168,7 @@ export default function App() {
 		async (id) => {
 			const data = await apiFetch("/clinic", {
 				method: "GET",
-				params: { id },
+				params: id,
 			});
 
 			setSelectedClinic(data);
@@ -297,6 +298,7 @@ export default function App() {
 						type="primary"
 						size="small"
 						onClick={() => handleSuggestEdit(record)}
+						disabled={record.is_disable ?? false}
 					>
 						Đề xuất chỉnh sửa
 					</Button>
