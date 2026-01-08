@@ -4,6 +4,7 @@ import { useWordPress } from "@/hooks/use-wordpress";
 import { useLocationPreference } from "@/hooks/use-location-preference";
 import SearchHeader from "@/component/search-header.jsx";
 import EditClinicModal from "@/component/edit-clinic-modal.jsx";
+import EditClinicForm from "@/component/form/edit-clinic-suggestions-form.jsx";
 import { PlusOutlined } from "@ant-design/icons";
 import { getStatusIcon, getStatusTooltip } from "@/utils/utils";
 import {
@@ -234,7 +235,7 @@ export default function App() {
 			await getClinicDetail(record.id);
 			setOpenModel(true);
 		} catch (err) {
-			message.error("Không thể tải thông tin phòng khám");
+			message.error("Không thể tải thông tin chi tiết phòng khám");
 
 			const clinic = clinicsRefer.find((item) => item.id === record.id);
 
@@ -371,7 +372,13 @@ export default function App() {
 				}
 				okeText={selectedClinic ? "Gửi đề xuất" : "Tạo đề xuất"}
 				cancelText="Hủy"
-				provinces={provinces}
+				renderForm={(form, onFinish) => (
+					<EditClinicForm
+						form={form}
+						onFinish={onFinish}
+						provinces={provinces}
+					/>
+				)}
 			/>
 		</div>
 	);
