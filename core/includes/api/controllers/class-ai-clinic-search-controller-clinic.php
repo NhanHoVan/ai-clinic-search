@@ -386,4 +386,52 @@ class Ai_Clinic_Controller_Clinic
         'description',
         'image',
     ];
+
+    /**
+     * Get clinics management (user/admin)
+     */
+    public function get_clinics_management(WP_REST_Request $request)
+    {
+        $body_request = $request->get_json_params();
+        $body = [
+            'province' => sanitize_text_field($body_request['province'] ?? ''),
+            'district' => sanitize_text_field($body_request['district'] ?? ''),
+            'limit'    => intval($body_request['limit'] ?? 8),
+            'page'     => max(1, intval($body_request['page'] ?? 1)),
+            'type'     => sanitize_text_field($body_request['type'] ?? ''),
+            'search'   => sanitize_text_field($body_request['search'] ?? ''),
+        ];
+
+        $offset = ($body['page'] - 1) * $body['limit'];
+
+        $db_params = [
+            'province' => $body['province'],
+            'district' => $body['district'],
+            'limit'    => $body['limit'],
+            'offset'   => $offset,
+        ];
+
+        if (!empty($body['search'])) {
+            $db_params['search'] = $body['search'];
+        }
+
+        if ($body['type'] === 'management-user') {
+            $db_params['is_active'] = 'ACTIVE';
+            $result = $this->database->aiclinic_get_clinics_paginated($db_params);
+            $clinics_filtered = $this->clinic_service->filter_and_mask_clinics($result['data'] ?? []);
+            $clinics_response = $this->clinic_suggest_service->map_user_clinics_with_suggestions($clinics_filtered);
+        } elseif ($body['type'] === 'management-admin') {
+            $result = $this->database->aiclinic_get_clinics_paginated($db_params);
+            $clinics_response = $this->clinic_service->filter_and_mask_clinics($result['data'] ?? []);
+        } else {
+            return new WP_Error('invalid_request', 'Invalid type', ['status' => 400]);
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'page'    => $body['page'],
+            'total'   => $result['filtered'] ?? 0,
+            'clinics' => $clinics_response,
+        ], 200);
+    }
 }

@@ -469,14 +469,28 @@ class Ai_Clinic_Proxy_Controller
             'page' => sanitize_text_field($body_request['page']),
         ];
 
+        if (!empty($body_request['search'])) {
+            $body['search'] = sanitize_text_field($body_request['search']);
+        }
+
+        $type = $body_request['type'] ?? null;
+        if ($type === 'management-user' || $type === 'management-admin') {
+            $body['type'] = $type;
+            $endpoint = '/clinics-management';
+            $base = Ai_Clinic_REST_Register::GROUP_ADMIN;
+        } else {
+            $endpoint = '/clinics';
+            $base = Ai_Clinic_REST_Register::GROUP_PUBLIC;
+        }
+
         $headers = [
             'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
         ];
 
         $result = $this->proxy_request(
-            Ai_Clinic_REST_Register::GROUP_PUBLIC,
+            $base,
             'POST',
-            '/clinics',
+            $endpoint,
             $body,
             $headers
         );

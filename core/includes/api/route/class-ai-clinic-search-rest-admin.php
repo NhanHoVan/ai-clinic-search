@@ -27,5 +27,12 @@ class Ai_Clinic_REST_Admin
             'callback' => [$clinic_controller, 'create_clinic_suggestion'],
             'permission_callback' => [Ai_Clinic_Permissions::class, 'check_internal_api_key'],
         ]);
+
+        // get_clinics_management
+        register_rest_route($base, '/clinics-management', [
+            'methods' => 'POST',
+            'callback' => [$clinic_controller, 'get_clinics_management'],
+            'permission_callback' => [Ai_Clinic_Permissions::class, 'check_internal_api_key'],
+        ]);
     }
 }

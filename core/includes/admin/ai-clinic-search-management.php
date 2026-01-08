@@ -11,7 +11,7 @@ function aiclinic_management_page()
 {
 ?>
     <div style="padding-right: 20px;">
-        <?php if (!current_user_can('administrator')) : ?>
+        <?php if (current_user_can('administrator')) : ?>
             <div id="clinic-management-admin-root"></div>
         <?php else : ?>
             <div id="clinic-management-root"></div>
