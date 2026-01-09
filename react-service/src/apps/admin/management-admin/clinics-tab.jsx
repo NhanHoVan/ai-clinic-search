@@ -20,7 +20,7 @@ import {
 	CheckCircleTwoTone,
 } from "@ant-design/icons";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const IconMap = {
 	ExclamationCircleFilled: (
@@ -342,10 +342,6 @@ export default function ClinicsTab() {
 
 	return (
 		<div style={{ margin: "20px auto" }}>
-			<Title level={2} style={{ textAlign: "center", marginBottom: 20 }}>
-				Quản lý phòng khám, bệnh viện
-			</Title>
-
 			<SearchHeader
 				provinces={provinces}
 				districts={districts}
