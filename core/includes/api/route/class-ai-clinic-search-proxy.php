@@ -93,6 +93,38 @@ class Ai_Clinic_Proxy_Controller
                 return current_user_can('edit_posts');
             },
         ]);
+
+        register_rest_route($namespace, '/clinic/admin-update', [
+            'methods' => 'POST',
+            'callback' => [$this, 'admin_update_clinic'],
+            'permission_callback' => function () {
+                return current_user_can('manage_options');
+            },
+        ]);
+
+        register_rest_route($namespace, '/clinic', [
+            'methods' => 'DELETE',
+            'callback' => [$this, 'admin_delete_clinic'],
+            'permission_callback' => function () {
+                return current_user_can('manage_options');
+            },
+        ]);
+
+        register_rest_route($namespace, '/clinic-suggestions', [
+            'methods' => 'POST',
+            'callback' => [$this, 'get_clinic_suggestions'],
+            'permission_callback' => function () {
+                return current_user_can('manage_options');
+            },
+        ]);
+
+        register_rest_route($namespace, '/clinic-suggestions/review', [
+            'methods' => 'POST',
+            'callback' => [$this, 'clinic_suggestions_review'],
+            'permission_callback' => function () {
+                return current_user_can('manage_options');
+            },
+        ]);
     }
 
     /**
@@ -666,6 +698,183 @@ class Ai_Clinic_Proxy_Controller
             $headers
         );
 
+        return rest_ensure_response($result);
+    }
+
+    /**
+     * Admin update clinic detail
+     */
+    public function admin_update_clinic(WP_REST_Request $request)
+    {
+        $body_request = $request->get_json_params();
+        if (empty($body_request)) {
+            return new WP_Error(
+                'invalid_request',
+                'Request body is required',
+                ['status' => 400]
+            );
+        }
+
+        if (empty($body_request['id'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "id" is required',
+                ['status' => 400]
+            );
+        }
+
+        $clinic_id = absint($body_request['id']);
+
+        $update_fields = $body_request;
+        unset($update_fields['id']);
+
+        $body = [
+            'clinic_id'        => $clinic_id,
+            'update_fields'    => $update_fields,
+        ];
+
+        $headers = [
+            'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
+        ];
+
+        $result = $this->proxy_request(
+            Ai_Clinic_REST_Register::GROUP_ADMIN,
+            'POST',
+            '/clinic/update',
+            $body,
+            $headers
+        );
+        return rest_ensure_response($result);
+    }
+
+    /**
+     * Admin delete clinic
+     */
+    public function admin_delete_clinic(WP_REST_Request $request)
+    {
+        $body_request = $request->get_json_params();
+        if (empty($body_request)) {
+            return new WP_Error(
+                'invalid_request',
+                'Request body is required',
+                ['status' => 400]
+            );
+        }
+
+        if (empty($body_request['id'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "id" is required',
+                ['status' => 400]
+            );
+        }
+
+        $body = [
+            'clinic_id' => absint($body_request['id']),
+        ];
+
+        $headers = [
+            'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
+        ];
+
+        $result = $this->proxy_request(
+            Ai_Clinic_REST_Register::GROUP_ADMIN,
+            'DELETE',
+            '/clinic/delete',
+            $body,
+            $headers
+        );
+        return rest_ensure_response($result);
+    }
+
+    /**
+     * Get clinic suggestions
+     */
+    public function get_clinic_suggestions(WP_REST_Request $request)
+    {
+        $body_request = $request->get_json_params();
+        if (empty($body_request)) {
+            return new WP_Error('invalid_request', 'Request body is required', ['status' => 400]);
+        }
+
+        if (empty($body_request['limit'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "limit" is required',
+                ['status' => 400]
+            );
+        }
+
+        if (empty($body_request['page'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "page" is required',
+                ['status' => 400]
+            );
+        }
+
+        $body = [
+            'limit' => sanitize_text_field($body_request['limit']),
+            'page' => sanitize_text_field($body_request['page']),
+        ];
+
+        $headers = [
+            'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
+        ];
+
+        $result = $this->proxy_request(
+            Ai_Clinic_REST_Register::GROUP_ADMIN,
+            'POST',
+            '/clinic_suggestions',
+            $body,
+            $headers
+        );
+        return rest_ensure_response($result);
+    }
+
+    /**
+     * Admin review clinic suggestions
+     */
+    public function clinic_suggestions_review(WP_REST_Request $request)
+    {
+        $body_request = $request->get_json_params();
+        if (empty($body_request)) {
+            return new WP_Error(
+                'invalid_request',
+                'Request body is required',
+                ['status' => 400]
+            );
+        }
+
+        if (empty($body_request['id'])) {
+            return new WP_Error(
+                'invalid_request',
+                'Field "id" is required',
+                ['status' => 400]
+            );
+        }
+
+        $suggest_id = absint($body_request['id']);
+
+        $review_fields = $body_request;
+        unset($review_fields['id']);
+
+        $body = [
+            'suggest_id'    => $suggest_id,
+            'review_fields' => $review_fields,
+        ];
+
+        $headers = [
+            'Content-Type' => $request->get_header('Content-Type') ?: 'application/json',
+        ];
+
+        $result = $this->proxy_request(
+            Ai_Clinic_REST_Register::GROUP_ADMIN,
+            'POST',
+            '/clinic_suggestions/review',
+            $body,
+            $headers
+        );
         return rest_ensure_response($result);
     }
 }
