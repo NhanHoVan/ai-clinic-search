@@ -55,10 +55,6 @@ export default function EditClinicForm({ form, onFinish, provinces }) {
 				<Input disabled />
 			</Form.Item>
 
-			<Form.Item label="Place ID" name="place_id">
-				<Input disabled />
-			</Form.Item>
-
 			<Form.Item
 				label="Tên phòng khám"
 				name="name"

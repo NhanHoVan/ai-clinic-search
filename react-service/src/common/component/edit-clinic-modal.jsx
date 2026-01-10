@@ -1,6 +1,5 @@
 import { Modal, Form } from "antd";
 import React from "react";
-import EditClinicForm from "./form/edit-clinic-form";
 
 export default function EditClinicModal({
 	open,
@@ -11,7 +10,7 @@ export default function EditClinicModal({
 	title,
 	okeText,
 	cancelText,
-	provinces,
+	renderForm,
 }) {
 	const [form] = Form.useForm();
 
@@ -40,17 +39,9 @@ export default function EditClinicModal({
 			}}
 			maskClosable={false}
 			style={{ top: 50 }}
-			styles={{
-				header: {
-					marginBottom: 25,
-				},
-			}}
 		>
-			<EditClinicForm
-				form={form}
-				onFinish={onSubmit}
-				provinces={provinces}
-			/>
+			{renderForm && renderForm(form, onSubmit)}
 		</Modal>
 	);
 }
+
