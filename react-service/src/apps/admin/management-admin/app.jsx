@@ -1,6 +1,6 @@
 import { Tabs, Typography } from "antd";
 import ClinicsTab from "./clinics-tab.jsx";
-import ClinicSuggestionReviewTab from "./clinic-suggestions-tab.jsx";
+import ClinicSuggestionReviewTab from "./clinic-suggestions-review-tab.jsx";
 
 const { Title } = Typography;
 

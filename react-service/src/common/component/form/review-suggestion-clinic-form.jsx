@@ -15,7 +15,7 @@ export default function ReviewSuggestionForm({ form, onFinish, suggestion }) {
 		id,
 		suggestion_type,
 		clinic_id,
-		user_id,
+		user_name,
 		suggested_by,
 		status,
 		created_at,
@@ -43,7 +43,7 @@ export default function ReviewSuggestionForm({ form, onFinish, suggestion }) {
 
 				<Descriptions.Item label="Phòng khám">
 					{clinic_id ? (
-						`#${clinic_id}`
+						<Tag color="blue">ID: {clinic_id}</Tag>
 					) : (
 						<Tag color="green">Phòng khám mới</Tag>
 					)}
@@ -55,8 +55,8 @@ export default function ReviewSuggestionForm({ form, onFinish, suggestion }) {
 							? "Chủ phòng khám"
 							: "Người dùng"}
 					</Tag>
-					{user_id && (
-						<span style={{ marginLeft: 8 }}>User #{user_id}</span>
+					{user_name && (
+						<span style={{ marginLeft: 8 }}>{user_name}</span>
 					)}
 				</Descriptions.Item>
 

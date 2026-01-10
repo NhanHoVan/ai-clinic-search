@@ -13,14 +13,36 @@ export default function EditClinicModal({
 	renderForm,
 }) {
 	const [form] = Form.useForm();
+	const initialValuesRef = React.useRef(null);
 
 	React.useEffect(() => {
 		if (clinic) {
 			form.setFieldsValue(clinic);
+			initialValuesRef.current = clinic;
 		} else {
 			form.resetFields();
+			initialValuesRef.current = null;
 		}
 	}, [clinic, form]);
+
+	const handleSubmit = (values) => {
+		if (!initialValuesRef.current) {
+			onSubmit(values);
+			return;
+		}
+
+		const changedValues = Object.keys(values).reduce((acc, key) => {
+			if (values[key] !== initialValuesRef.current[key]) {
+				acc[key] = values[key];
+			}
+			return acc;
+		}, {});
+
+		onSubmit({
+			id: clinic.id,
+			...changedValues,
+		});
+	};
 
 	return (
 		<Modal
@@ -40,8 +62,7 @@ export default function EditClinicModal({
 			maskClosable={false}
 			style={{ top: 50 }}
 		>
-			{renderForm && renderForm(form, onSubmit)}
+			{renderForm && renderForm(form, handleSubmit)}
 		</Modal>
 	);
 }
-

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
 	Typography,
 	message,
@@ -119,11 +119,19 @@ export default function ClinicsTab() {
 		});
 	};
 
+	const didInitRef = useRef(false);
 	useEffect(() => {
+		if (didInitRef.current) return;
+		didInitRef.current = true;
+
 		handleClinicsSearch();
 	}, []);
 
+	const didFetchProvincesRef = useRef(false);
 	useEffect(() => {
+		if (didFetchProvincesRef.current) return;
+		didFetchProvincesRef.current = true;
+
 		fetchProvinces().catch((e) => message.error(e?.message));
 	}, [fetchProvinces]);
 
