@@ -203,6 +203,126 @@ class Ai_Clinic_Controller_Clinic
     }
 
     /**
+     * Get clinics management (user/admin)
+     */
+    public function get_clinics_management(WP_REST_Request $request)
+    {
+        $body_request = $request->get_json_params();
+        $body = [
+            'province' => sanitize_text_field($body_request['province'] ?? ''),
+            'district' => sanitize_text_field($body_request['district'] ?? ''),
+            'limit'    => intval($body_request['limit'] ?? 8),
+            'page'     => max(1, intval($body_request['page'] ?? 1)),
+            'type'     => sanitize_text_field($body_request['type'] ?? ''),
+            'search'   => sanitize_text_field($body_request['search'] ?? ''),
+        ];
+
+        $offset = ($body['page'] - 1) * $body['limit'];
+
+        $db_params = [
+            'province' => $body['province'],
+            'district' => $body['district'],
+            'limit'    => $body['limit'],
+            'offset'   => $offset,
+        ];
+
+        if (!empty($body['search'])) {
+            $db_params['search'] = $body['search'];
+        }
+
+        if ($body['type'] === 'management-user') {
+            $db_params['is_active'] = 'ACTIVE';
+            $result = $this->database->aiclinic_get_clinics_paginated($db_params);
+            $clinics_filtered = $this->clinic_service->filter_and_mask_clinics($result['data'] ?? []);
+            $clinics_response = $this->clinic_suggest_service->map_user_clinics_with_suggestions($clinics_filtered);
+        } elseif ($body['type'] === 'management-admin') {
+            $result = $this->database->aiclinic_get_clinics_paginated($db_params);
+            $clinics_response = $this->clinic_service->filter_and_mask_clinics($result['data'] ?? []);
+        } else {
+            return new WP_Error('invalid_request', 'Invalid type', ['status' => 400]);
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'page'    => $body['page'],
+            'total'   => $result['filtered'] ?? 0,
+            'clinics' => $clinics_response,
+        ], 200);
+    }
+
+    /**
+     * POST ai-clinic-search/clinic/update
+     */
+    public function update_clinic(WP_REST_Request $request)
+    {
+        $body = $request->get_json_params();
+        $clinic_id = isset($body['clinic_id']) ? absint($body['clinic_id']) : 0;
+        $update_fields = $body['update_fields'] ?? null;
+
+        if ($clinic_id <= 0) {
+            return new WP_Error(
+                'invalid_clinic_id',
+                'clinic_id is required',
+                ['status' => 400]
+            );
+        }
+
+        if (empty($update_fields) || !is_array($update_fields)) {
+            return new WP_Error(
+                'invalid_update_fields',
+                'update_fields must be a non-empty array',
+                ['status' => 400]
+            );
+        }
+
+        $result = $this->database->aiclinic_update_clinic($clinic_id, $update_fields);
+        if ($result === false) {
+            return new WP_Error(
+                'update_failed',
+                'Failed to update clinic',
+                ['status' => 500]
+            );
+        }
+
+        return new WP_REST_Response([
+            'clinic_id' => $clinic_id,
+            'updated'   => $result,
+        ], 200);
+    }
+
+    /**
+     * DELETE ai-clinic-search/clinic/delete
+     */
+    public function delete_clinic(WP_REST_Request $request)
+    {
+        $body = $request->get_json_params();
+        $clinic_id = isset($body['clinic_id']) ? absint($body['clinic_id']) : 0;
+
+        if ($clinic_id <= 0) {
+            return new WP_Error(
+                'invalid_clinic_id',
+                'clinic_id is required',
+                ['status' => 400]
+            );
+        }
+
+        $result = $this->database->aiclinic_delete_clinic($clinic_id);
+
+        if ($result === false) {
+            return new WP_Error(
+                'delete_failed',
+                'Failed to delete clinic',
+                ['status' => 500]
+            );
+        }
+
+        return new WP_REST_Response([
+            'clinic_id' => $clinic_id,
+            'deleted'   => $result,
+        ], 200);
+    }
+
+    /**
      * Create a clinic suggestion (CREATE or EDIT).
      *
      * @param WP_REST_Request $request Incoming REST request containing:
@@ -388,50 +508,28 @@ class Ai_Clinic_Controller_Clinic
     ];
 
     /**
-     * Get clinics management (user/admin)
+     * POST ai-clinic-search/clinics
      */
-    public function get_clinics_management(WP_REST_Request $request)
+    public function get_clinic_suggestions($request)
     {
         $body_request = $request->get_json_params();
         $body = [
-            'province' => sanitize_text_field($body_request['province'] ?? ''),
-            'district' => sanitize_text_field($body_request['district'] ?? ''),
             'limit'    => intval($body_request['limit'] ?? 8),
             'page'     => max(1, intval($body_request['page'] ?? 1)),
-            'type'     => sanitize_text_field($body_request['type'] ?? ''),
-            'search'   => sanitize_text_field($body_request['search'] ?? ''),
         ];
 
         $offset = ($body['page'] - 1) * $body['limit'];
 
-        $db_params = [
-            'province' => $body['province'],
-            'district' => $body['district'],
+        $result = $this->database->aiclinic_get_clinic_edit_suggestions_paginated([
             'limit'    => $body['limit'],
             'offset'   => $offset,
-        ];
-
-        if (!empty($body['search'])) {
-            $db_params['search'] = $body['search'];
-        }
-
-        if ($body['type'] === 'management-user') {
-            $db_params['is_active'] = 'ACTIVE';
-            $result = $this->database->aiclinic_get_clinics_paginated($db_params);
-            $clinics_filtered = $this->clinic_service->filter_and_mask_clinics($result['data'] ?? []);
-            $clinics_response = $this->clinic_suggest_service->map_user_clinics_with_suggestions($clinics_filtered);
-        } elseif ($body['type'] === 'management-admin') {
-            $result = $this->database->aiclinic_get_clinics_paginated($db_params);
-            $clinics_response = $this->clinic_service->filter_and_mask_clinics($result['data'] ?? []);
-        } else {
-            return new WP_Error('invalid_request', 'Invalid type', ['status' => 400]);
-        }
+        ]);
 
         return new WP_REST_Response([
             'success' => true,
             'page'    => $body['page'],
             'total'   => $result['filtered'] ?? 0,
-            'clinics' => $clinics_response,
+            'clinics' => $result['data'] ?? [],
         ], 200);
     }
 }
