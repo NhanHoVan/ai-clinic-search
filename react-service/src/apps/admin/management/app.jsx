@@ -169,7 +169,7 @@ export default function App() {
 		async (id) => {
 			const data = await apiFetch("/clinic", {
 				method: "GET",
-				params: id,
+				params: { id },
 			});
 
 			setSelectedClinic(data);

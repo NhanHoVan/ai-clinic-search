@@ -200,9 +200,12 @@ class Ai_Clinic_Proxy_Controller
         }
 
         $cache_key = 'aiclinic_proxy_' . md5($endpoint . serialize($params));
-        $cached = get_transient($cache_key);
-        if ($cached !== false) {
-            return $cached;
+        $is_detail = ($endpoint === '/clinic' && isset($params['id']));
+        if (!$is_detail) {
+            $cached = get_transient($cache_key);
+            if ($cached !== false) {
+                return $cached;
+            }
         }
 
         $api_base = Ai_Clinic_REST_Register::get_base($base);
@@ -250,7 +253,7 @@ class Ai_Clinic_Proxy_Controller
             return new WP_Error('invalid_json', 'Invalid response from API', ['status' => 500]);
         }
 
-        if ($status_code === 200) {
+        if ($status_code === 200 && !$is_detail) {
             set_transient($cache_key, $data, self::CACHE_TTL);
         }
 
@@ -568,18 +571,16 @@ class Ai_Clinic_Proxy_Controller
     public function get_clinic(WP_REST_Request $request)
     {
         $params = [];
-
-        $id = $request->get_param('id');
-        if ($id === null) {
-            $id = $request->get_param('params');
-            if (is_string($id)) {
-                $id = trim($id, '"');
-            }
+        $id = absint($request->get_param('id'));
+        if ($id <= 0 || $id === null) {
+            return new WP_Error(
+                'invalid_id',
+                'id is required',
+                ['status' => 400]
+            );
         }
 
-        if ($id !== null) {
-            $params['id'] = absint($id);
-        }
+        $params['id'] = absint($id);
 
         $result = $this->proxy_get(
             Ai_Clinic_REST_Register::GROUP_ADMIN,

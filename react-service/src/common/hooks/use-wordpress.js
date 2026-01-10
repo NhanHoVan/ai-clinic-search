@@ -71,7 +71,11 @@ export function useWordPress() {
 				}
 			} else if (normalizedMethod === "GET") {
 				if (params && Object.keys(params).length > 0) {
-					url.searchParams.append("params", JSON.stringify(params));
+					Object.entries(params).forEach(([key, value]) => {
+						if (value !== undefined && value !== null) {
+							url.searchParams.append(key, String(value));
+						}
+					});
 				}
 			}
 
