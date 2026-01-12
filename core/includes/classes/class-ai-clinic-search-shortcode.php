@@ -49,6 +49,14 @@ class AI_Clinic_Search_Shortcode
                 'context' => 'admin',
                 'admin_page' => 'aiclinic-management',
             ],
+            'management-admin' => [
+                'shortcode' => 'ai_react_clinic_management_admin',
+                'root_id' => 'clinic-management-admin-root',
+                'app_path' => 'admin/management-admin/index.js',
+                'title' => 'Clinic Management Admin Module',
+                'context' => 'admin',
+                'admin_page' => 'aiclinic-management',
+            ],
             // TODO add new service
         ];
     }
@@ -105,6 +113,7 @@ class AI_Clinic_Search_Shortcode
         $vendor_react = $this->aiclinic_get_hashed_file('shared/chunks/vendor-react-*.js');
         $vendor_antd = $this->aiclinic_get_hashed_file('shared/chunks/vendor-antd-*.js');
         $reset_js     = $this->aiclinic_get_hashed_file('shared/chunks/reset-*.js');
+        $clinic_modal_js     = $this->aiclinic_get_hashed_file('shared/chunks/edit-clinic-modal-*.js');
 
         if ($css_file) {
             wp_enqueue_style('ai-react-shared-css', $build_url . $css_file, [], '1.0.0');
@@ -128,6 +137,16 @@ class AI_Clinic_Search_Shortcode
             wp_enqueue_script(
                 'ai-react-reset',
                 $build_url . $reset_js,
+                ['ai-react-vendor-react'],
+                '1.0.0',
+                true
+            );
+        }
+
+        if ($clinic_modal_js) {
+            wp_enqueue_script(
+                'ai-react-edit-clinic-modal',
+                $build_url . $clinic_modal_js,
                 ['ai-react-vendor-react'],
                 '1.0.0',
                 true
@@ -262,11 +281,13 @@ class AI_Clinic_Search_Shortcode
 
         $current_page = sanitize_text_field($_GET['page']);
 
-        foreach ($this->aiclinic_get_apps_by_context('admin') as $key => $config) {
-            if (!empty($config['admin_page']) && $config['admin_page'] === $current_page) {
-                $this->aiclinic_enqueue_vendors();
-                $this->aiclinic_enqueue_app($key, $config);
-                break;
+        if ($current_page === 'aiclinic-management') {
+            $this->aiclinic_enqueue_vendors();
+
+            if (current_user_can('administrator')) {
+                $this->aiclinic_enqueue_app('management-admin', $this->aiclinic_get_apps_config()['management-admin']);
+            } else {
+                $this->aiclinic_enqueue_app('management', $this->aiclinic_get_apps_config()['management']);
             }
         }
     }

@@ -286,6 +286,7 @@ class Ai_Clinic_Service_Clinic
                 'website'     => $clinic['website'] ?? '',
                 'verify_status' => $clinic['verify_status'] ?? '',
                 'is_active'     => $clinic['is_active'] ?? '',
+                'created_at'     => $clinic['created_at'] ?? '',
             ];
         }, $clinics);
     }

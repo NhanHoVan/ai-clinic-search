@@ -1935,6 +1935,8 @@ class Ai_Clinic_Search_DB
             'filters' => [],
             'limit'   => 10,
             'offset'  => 0,
+            'order_by'       => 'created_at',
+            'sort_direction' => 'DESC',
         ];
 
         $args = wp_parse_args($args, $defaults);
