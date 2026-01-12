@@ -257,6 +257,7 @@ export default function ClinicsTab() {
 	const handleDeleteClinic = async (id) => {
 		try {
 			await deleteClinic(id);
+			loadClinics({ page: page, search: searchText });
 		} catch (e) {
 			message.error("Có lỗi xảy ra, vui lòng thử lại sau!");
 		}

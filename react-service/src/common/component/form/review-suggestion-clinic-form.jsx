@@ -86,7 +86,25 @@ export default function ReviewSuggestionForm({ form, onFinish, suggestion }) {
 				name="status"
 				initialValue={status}
 				rules={[
-					{ required: true, message: "Vui lòng chọn trạng thái" },
+					{
+						validator: (_, value) => {
+							if (status === "PENDING" && value === "PENDING") {
+								return Promise.reject(
+									new Error(
+										"Vui lòng chọn trạng thái duyệt hoặc từ chối"
+									)
+								);
+							}
+
+							if (!value) {
+								return Promise.reject(
+									new Error("Vui lòng chọn trạng thái")
+								);
+							}
+
+							return Promise.resolve();
+						},
+					},
 				]}
 			>
 				<Select
