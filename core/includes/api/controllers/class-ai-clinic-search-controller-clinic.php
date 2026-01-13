@@ -508,7 +508,7 @@ class Ai_Clinic_Controller_Clinic
     ];
 
     /**
-     * POST ai-clinic-search/clinics
+     * POST ai-clinic-search/clinic_suggestions
      */
     public function get_clinic_suggestions($request)
     {
@@ -531,5 +531,65 @@ class Ai_Clinic_Controller_Clinic
             'total'   => $result['filtered'] ?? 0,
             'clinics' => $result['data'] ?? [],
         ], 200);
+    }
+
+    /**
+     * POST ai-clinic-search/review_clinic_suggestions
+     */
+    public function review_clinic_suggestions(WP_REST_Request $request)
+    {
+        $source = $request->get_header('X-INTERNAL-SOURCE');
+        $user_id = null;
+        if ($source === AI_CLINIC_SEARCH_INTERNAL_SOURCE) {
+            $user_id = absint($request->get_header('X-INTERNAL-USER-ID'));
+        }
+
+        if (empty($user_id)) {
+            return new WP_Error(
+                'unauthorized',
+                'User is not authorized',
+                ['status' => 401]
+            );
+        }
+
+        $body = $request->get_json_params();
+        $suggest_id = isset($body['suggest_id']) ? absint($body['suggest_id']) : 0;
+        $review_fields = $body['review_fields'] ?? null;
+
+        if ($suggest_id <= 0) {
+            return new WP_Error(
+                'invalid_suggest_id',
+                'id is required',
+                ['status' => 400]
+            );
+        }
+
+        if (empty($review_fields) || !is_array($review_fields)) {
+            return new WP_Error(
+                'invalid_review_fields',
+                'review_fields must be an array',
+                ['status' => 400]
+            );
+        }
+
+        if (empty($review_fields['status']) || !in_array($review_fields['status'], ['APPROVED', 'REJECTED'], true)) {
+            return new WP_Error(
+                'invalid_status',
+                'status must be APPROVED or REJECTED',
+                ['status' => 400]
+            );
+        }
+
+        $result = $this->clinic_suggest_service->review_suggestion(
+            $suggest_id,
+            $review_fields,
+            $user_id
+        );
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return new WP_REST_Response($result, 200);
     }
 }
