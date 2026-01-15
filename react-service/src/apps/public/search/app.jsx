@@ -251,7 +251,7 @@ export default function App() {
 		const data = await apiFetch("/specialties", {
 			method: "GET",
 		});
-		setSpecialties(Array.isArray(data) ? data : []);
+		setSpecialties(Array.isArray(data?.specialties) ? data.specialties : []);
 	}, [apiFetch]);
 
 	const handleSpecialties = async () => {
