@@ -89,10 +89,19 @@ class Ai_Clinic_Controller_Clinic
         return new WP_REST_Response($districts, 200);
     }
 
-
-    public function get_specialties($request)
+    public function get_specialties()
     {
-        // TODO
+        $result = [];
+        try {
+            $result = $this->database->aiclinic_get_tags();
+        } catch (Exception $e) {
+            error_log('Search specialties error: ' . $e->getMessage());
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'specialties' => $result,
+        ], 200);
     }
 
     /**
