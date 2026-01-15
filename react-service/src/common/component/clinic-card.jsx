@@ -84,6 +84,7 @@ export default function ClinicCard({ clinic, loading, onCopy, onViewDetail }) {
 						</p>
 					)
 				}
+				className="meta-clinic-card"
 			/>
 			<p>
 				<strong>Địa chỉ:</strong> {clinic.address}

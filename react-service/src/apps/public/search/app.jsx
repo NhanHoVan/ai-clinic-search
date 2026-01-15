@@ -7,6 +7,7 @@ import { useLocationPreference } from "@/hooks/use-location-preference";
 import ClinicCard from "@/component/clinic-card.jsx";
 import SearchHeader from "@/component/search-header.jsx";
 import ClinicSearchList from "@/component/clinic-search-list.jsx";
+import SpecialtyTags from "../../../common/component/specialty-tags";
 
 const { Title } = Typography;
 
@@ -31,6 +32,10 @@ export default function App() {
 	const { pref, setProvince, setDistrict } = useLocationPreference();
 	const [selectedProvince, setSelectedProvince] = useState();
 	const [selectedDistrict, setSelectedDistrict] = useState();
+
+	const [specialties, setSpecialties] = useState([]);
+	const [selectedSpecialties, setSelectedSpecialties] = useState([]);
+	const [loadingSpecialties, setLoadingSpecialties] = useState(false);
 
 	const fetchProvinces = useCallback(
 		async (search = "") => {
@@ -78,6 +83,7 @@ export default function App() {
 						search,
 						province: selectedProvince,
 						district: selectedDistrict,
+						specialties: selectedSpecialties,
 					},
 					signal: abortControllerRef.current.signal,
 				});
@@ -241,6 +247,36 @@ export default function App() {
 		);
 	};
 
+	const fetchSpecialties = useCallback(async () => {
+		const data = await apiFetch("/specialties", {
+			method: "GET",
+		});
+		setSpecialties(Array.isArray(data) ? data : []);
+	}, [apiFetch]);
+
+	const handleSpecialties = async () => {
+		setLoadingSpecialties(true);
+		try {
+			await fetchSpecialties();
+		} catch (e) {
+			message.error(e?.message);
+		} finally {
+			setLoadingSpecialties(false);
+		}
+	};
+
+	useEffect(() => {
+		handleSpecialties();
+	}, []);
+
+	const handleSpecialtyChange = (code) => {
+		setSelectedSpecialties((prev) =>
+			prev.includes(code)
+				? prev.filter((c) => c !== code)
+				: [...prev, code]
+		);
+	};
+
 	return (
 		<div style={{ margin: "20px auto" }}>
 			<Title level={2} style={{ textAlign: "center", marginBottom: 20 }}>
@@ -258,6 +294,13 @@ export default function App() {
 				handleDistrictChange={handleDistrictChange}
 				setSearchText={handleChangeText}
 				handleSearch={handleClinicsSearch}
+			/>
+
+			<SpecialtyTags
+				specialties={specialties}
+				selectedSpecialties={selectedSpecialties}
+				loading={loadingSpecialties}
+				onChange={handleSpecialtyChange}
 			/>
 
 			<ClinicSearchList
