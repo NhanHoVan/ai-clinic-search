@@ -398,17 +398,9 @@ class Ai_Clinic_Proxy_Controller
      */
     public function get_specialties(WP_REST_Request $request)
     {
-        $search = $request->get_param('search');
-        $params = [];
-
-        if (!empty($search)) {
-            $params['search'] = sanitize_text_field($search);
-        }
-
         $result = $this->proxy_get(
             Ai_Clinic_REST_Register::GROUP_PUBLIC,
-            '/specialties',
-            $params
+            '/specialties'
         );
 
         return rest_ensure_response($result);

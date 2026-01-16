@@ -89,10 +89,29 @@ class Ai_Clinic_Controller_Clinic
         return new WP_REST_Response($districts, 200);
     }
 
-
-    public function get_specialties($request)
+    /**
+     * GET ai-clinic-search/specialties
+     */
+    public function get_specialties()
     {
-        // TODO
+        $specialties = [];
+        try {
+            $result = $this->database->aiclinic_get_tags();
+
+            $specialties = array_map(function ($item) {
+                return [
+                    'id'   => (string) $item['id'],
+                    'name' => $item['name'],
+                ];
+            }, $result);
+        } catch (Exception $e) {
+            error_log('Search specialties error: ' . $e->getMessage());
+        }
+
+        return new WP_REST_Response([
+            'success' => true,
+            'specialties' => $specialties,
+        ], 200);
     }
 
     /**

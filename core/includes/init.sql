@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS wp_aiclinic_tag_relations (
     PRIMARY KEY (clinic_id, tag_id),
     FOREIGN KEY (clinic_id) REFERENCES wp_aiclinic_clinics(id) ON DELETE CASCADE,
     FOREIGN KEY (tag_id) REFERENCES wp_aiclinic_tags(id) ON DELETE CASCADE
+    CREATE INDEX idx_tag_clinic ON wp_aiclinic_tag_relations(tag_id, clinic_id);
 ) {CHARSET_COLLATE};
 
 -- Table for storing user reviews of clinics

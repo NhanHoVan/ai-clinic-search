@@ -737,18 +737,21 @@ class Ai_Clinic_Search_DB
     public function aiclinic_get_tags($args = [])
     {
         $defaults = [
-            'search'         => '',
-            'column_search'  => 'name',
-            'limit'          => 100,
-            'offset'         => 0,
-            'order_by'       => 'name',
-            'sort_direction' => 'ASC'
+            'search' => '',
+            'limit'  => 100,
+            'offset' => 0,
         ];
 
         $args = wp_parse_args($args, $defaults);
 
+        $args['limit'] = min((int) $args['limit'], 200);
+        $args['column_search']  = 'name';
+        $args['order_by']       = 'name';
+        $args['sort_direction'] = 'ASC';
+
         return $this->helper->database->aiclinic_get_all('aiclinic_tags', $args) ?: [];
     }
+
 
     /**
      * Get a single tag by ID.
