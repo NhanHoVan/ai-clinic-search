@@ -7,6 +7,7 @@ import { useLocationPreference } from "@/hooks/use-location-preference";
 import ClinicCard from "@/component/clinic-card.jsx";
 import SearchHeader from "@/component/search-header.jsx";
 import ClinicSearchList from "@/component/clinic-search-list.jsx";
+import SpecialtyTags from "@/component/specialty-tags";
 
 const { Title } = Typography;
 
@@ -31,6 +32,10 @@ export default function App() {
 	const { pref, setProvince, setDistrict } = useLocationPreference();
 	const [selectedProvince, setSelectedProvince] = useState();
 	const [selectedDistrict, setSelectedDistrict] = useState();
+
+	const [specialties, setSpecialties] = useState([]);
+	const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState([]);
+	const [loadingSpecialties, setLoadingSpecialties] = useState(false);
 
 	const fetchProvinces = useCallback(
 		async (search = "") => {
@@ -78,6 +83,7 @@ export default function App() {
 						search,
 						province: selectedProvince,
 						district: selectedDistrict,
+						specialties: selectedSpecialtyIds,
 					},
 					signal: abortControllerRef.current.signal,
 				});
@@ -88,7 +94,7 @@ export default function App() {
 				}
 			}
 		},
-		[apiFetch, selectedProvince, selectedDistrict]
+		[apiFetch, selectedProvince, selectedDistrict, selectedSpecialtyIds]
 	);
 
 	const fetchClinicsRefer = useCallback(
@@ -102,7 +108,7 @@ export default function App() {
 				},
 			});
 
-			setClinicsRefer(data.clinics || dummyData);
+			setClinicsRefer(data.clinics);
 			setTotal(data.total || 0);
 			setPage(data.page || page);
 		},
@@ -241,6 +247,36 @@ export default function App() {
 		);
 	};
 
+	const fetchSpecialties = useCallback(async () => {
+		const data = await apiFetch("/specialties", {
+			method: "GET",
+		});
+		setSpecialties(
+			Array.isArray(data?.specialties) ? data.specialties : []
+		);
+	}, [apiFetch]);
+
+	const handleSpecialties = async () => {
+		setLoadingSpecialties(true);
+		try {
+			await fetchSpecialties();
+		} catch (e) {
+			message.error(e?.message);
+		} finally {
+			setLoadingSpecialties(false);
+		}
+	};
+
+	useEffect(() => {
+		handleSpecialties();
+	}, []);
+
+	const handleSpecialtyChange = (id) => {
+		setSelectedSpecialtyIds((prev) =>
+			prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+		);
+	};
+
 	return (
 		<div style={{ margin: "20px auto" }}>
 			<Title level={2} style={{ textAlign: "center", marginBottom: 20 }}>
@@ -258,6 +294,13 @@ export default function App() {
 				handleDistrictChange={handleDistrictChange}
 				setSearchText={handleChangeText}
 				handleSearch={handleClinicsSearch}
+			/>
+
+			<SpecialtyTags
+				specialties={specialties}
+				selectedSpecialtyIds={selectedSpecialtyIds}
+				loading={loadingSpecialties}
+				onChange={handleSpecialtyChange}
 			/>
 
 			<ClinicSearchList

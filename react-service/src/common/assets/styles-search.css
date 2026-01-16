@@ -1,11 +1,15 @@
 .flex-col {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .label-input {
-    font-size: 15px;
-    color: #000000;
-    white-space: nowrap;
+	font-size: 15px;
+	color: #000000;
+	white-space: nowrap;
+}
+
+.meta-clinic-card .ant-card-meta-title {
+	margin-bottom: 10px;
 }

@@ -14,7 +14,7 @@ export default function SearchHeader({
 	handleSearch,
 }) {
 	return (
-		<div style={{ marginBottom: 24 }}>
+		<div style={{ marginBottom: 15 }}>
 			<Row gutter={[16, 16]}>
 				{/* Province */}
 				<Col xs={24} sm={12} md={6}>
