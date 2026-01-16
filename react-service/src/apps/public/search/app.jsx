@@ -7,7 +7,7 @@ import { useLocationPreference } from "@/hooks/use-location-preference";
 import ClinicCard from "@/component/clinic-card.jsx";
 import SearchHeader from "@/component/search-header.jsx";
 import ClinicSearchList from "@/component/clinic-search-list.jsx";
-import SpecialtyTags from "../../../common/component/specialty-tags";
+import SpecialtyTags from "@/component/specialty-tags";
 
 const { Title } = Typography;
 
@@ -34,7 +34,7 @@ export default function App() {
 	const [selectedDistrict, setSelectedDistrict] = useState();
 
 	const [specialties, setSpecialties] = useState([]);
-	const [selectedSpecialties, setSelectedSpecialties] = useState([]);
+	const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState([]);
 	const [loadingSpecialties, setLoadingSpecialties] = useState(false);
 
 	const fetchProvinces = useCallback(
@@ -83,7 +83,7 @@ export default function App() {
 						search,
 						province: selectedProvince,
 						district: selectedDistrict,
-						specialties: selectedSpecialties,
+						specialties: selectedSpecialtyIds,
 					},
 					signal: abortControllerRef.current.signal,
 				});
@@ -94,7 +94,7 @@ export default function App() {
 				}
 			}
 		},
-		[apiFetch, selectedProvince, selectedDistrict]
+		[apiFetch, selectedProvince, selectedDistrict, selectedSpecialtyIds]
 	);
 
 	const fetchClinicsRefer = useCallback(
@@ -108,7 +108,7 @@ export default function App() {
 				},
 			});
 
-			setClinicsRefer(data.clinics || dummyData);
+			setClinicsRefer(data.clinics);
 			setTotal(data.total || 0);
 			setPage(data.page || page);
 		},
@@ -251,7 +251,9 @@ export default function App() {
 		const data = await apiFetch("/specialties", {
 			method: "GET",
 		});
-		setSpecialties(Array.isArray(data?.specialties) ? data.specialties : []);
+		setSpecialties(
+			Array.isArray(data?.specialties) ? data.specialties : []
+		);
 	}, [apiFetch]);
 
 	const handleSpecialties = async () => {
@@ -269,11 +271,9 @@ export default function App() {
 		handleSpecialties();
 	}, []);
 
-	const handleSpecialtyChange = (code) => {
-		setSelectedSpecialties((prev) =>
-			prev.includes(code)
-				? prev.filter((c) => c !== code)
-				: [...prev, code]
+	const handleSpecialtyChange = (id) => {
+		setSelectedSpecialtyIds((prev) =>
+			prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
 		);
 	};
 
@@ -298,7 +298,7 @@ export default function App() {
 
 			<SpecialtyTags
 				specialties={specialties}
-				selectedSpecialties={selectedSpecialties}
+				selectedSpecialtyIds={selectedSpecialtyIds}
 				loading={loadingSpecialties}
 				onChange={handleSpecialtyChange}
 			/>
