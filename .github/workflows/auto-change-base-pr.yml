@@ -1,0 +1,43 @@
+name: Auto Change Base of Dependent PRs
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  update_pr_base:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install -y gh
+
+      - name: Change base of dependent PRs
+        env:
+          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        run: |
+          MERGED_BRANCH="${{ github.event.pull_request.head.ref }}"
+          echo "PR vừa được merge là từ branch: $MERGED_BRANCH"
+
+          # Lấy tất cả PR đang mở có base là MERGED_BRANCH
+          prs=$(gh pr list --state open --json number,baseRefName --jq ".[] | select(.baseRefName==\"$MERGED_BRANCH\") | .number")
+
+          if [ -z "$prs" ]; then
+            echo "Không có PR nào có base là '$MERGED_BRANCH'. Không cần đổi base."
+          else
+            for pr_number in $prs; do
+              echo "Đổi base của PR #$pr_number từ $MERGED_BRANCH sang main"
+              gh pr edit "$pr_number" --base main
+            done
+          fi
