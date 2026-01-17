@@ -173,64 +173,89 @@ class Ai_Clinic_Search_DB
     }
 
     /**
-     * Get paginated list of clinics with search and filters.
+     * Get clinics with optional filtering
      *
-     * @param array $args {
-     *     @type string $search         Search keyword (searches in name, address)
-     *     @type string $province       Filter by province code
-     *     @type string $district       Filter by district code
-     *     @type string $verify_status  Filter by verification status
-     *     @type string $is_active      Filter by active status
-     *     @type int    $limit          Records per page (default: 10)
-     *     @type int    $offset         Offset for pagination (default: 0)
-     *     @type string $order_by       Column to sort by (default: 'created_at')
-     *     @type string $sort_direction ASC or DESC (default: 'DESC')
-     * }
-     *
-     * @return array|false Array of clinic records or false on error.
+     * @param array $args Filter arguments
+     * @return array|false Array of clinics or false on error
      */
     public function aiclinic_get_clinics($args = [])
     {
         $defaults = [
-            'search'         => '',
-            'column_search'  => 'name',
-            'province'       => '',
-            'district'       => '',
-            'verify_status'  => '',
-            'is_active'      => '',
-            'limit'          => 10,
-            'offset'         => 0,
-            'order_by'       => 'created_at',
+            'search'        => '',
+            'column_search' => 'name',
+            'limit'         => 10,
+            'offset'        => 0,
+            'order_by'      => 'id',
             'sort_direction' => 'DESC',
-            'filters'        => []
+            'filters'       => []
         ];
 
         $args = wp_parse_args($args, $defaults);
 
         // Build filters
+        $filters = [];
+
         if (!empty($args['province'])) {
-            $args['filters']['province'] = sanitize_text_field($args['province']);
+            $filters['province'] = sanitize_text_field($args['province']);
         }
 
         if (!empty($args['district'])) {
-            $args['filters']['district'] = sanitize_text_field($args['district']);
+            $filters['district'] = sanitize_text_field($args['district']);
         }
 
         if (!empty($args['verify_status'])) {
-            $args['filters']['verify_status'] = sanitize_text_field($args['verify_status']);
+            $filters['verify_status'] = sanitize_text_field($args['verify_status']);
         }
 
         if (!empty($args['is_active'])) {
-            $args['filters']['is_active'] = sanitize_text_field($args['is_active']);
+            $filters['is_active'] = sanitize_text_field($args['is_active']);
         }
 
-        return $this->helper->database->aiclinic_get_all('aiclinic_clinics', $args);
+        $query_args = [
+            'search'         => $args['search'],
+            'column_search'  => $args['column_search'],
+            'limit'          => $args['limit'],
+            'offset'         => $args['offset'],
+            'order_by'       => $args['order_by'],
+            'sort_direction' => $args['sort_direction'],
+            'filters'        => $filters,
+        ];
+
+        // Handle specialty_ids filter with JOIN
+        if (!empty($args['specialty_ids']) && is_array($args['specialty_ids'])) {
+            $specialty_ids = array_map('intval', $args['specialty_ids']);
+            $specialty_ids = array_filter($specialty_ids);
+
+            if (!empty($specialty_ids)) {
+                $query_args['select'] = 'DISTINCT c.*';
+                $query_args['joins'] = [
+                    [
+                        'type'  => 'INNER',
+                        'table' => 'aiclinic_tag_relations tr',
+                        'on'    => 'c.id = tr.clinic_id'
+                    ]
+                ];
+                $query_args['filters']['tr.tag_id'] = $specialty_ids;
+            }
+        }
+
+        return $this->helper->database->aiclinic_get_all('aiclinic_clinics c', $query_args);
     }
 
     /**
      * Get paginated clinics with total counts (for DataTables).
      *
-     * @param array $args Same as aiclinic_get_clinics()
+     * @param array $args {
+     *     @type string $search        Search keyword
+     *     @type string $column_search Column to search in
+     *     @type string $province      Province filter
+     *     @type string $district      District filter
+     *     @type array  $specialty_ids Array of tag IDs to filter by
+     *     @type string $verify_status Verification status filter
+     *     @type string $is_active     Active status filter
+     *     @type int    $limit         Records per page
+     *     @type int    $offset        Offset for pagination
+     * }
      * @return array {
      *     @type array $data     Array of clinic records
      *     @type int   $total    Total records in table
@@ -262,10 +287,29 @@ class Ai_Clinic_Search_DB
             $count_args['filters']['is_active'] = sanitize_text_field($args['is_active']);
         }
 
+        // Handle specialty_ids filter
+        if (!empty($args['specialty_ids']) && is_array($args['specialty_ids'])) {
+            $specialty_ids = array_map('intval', $args['specialty_ids']);
+            $specialty_ids = array_filter($specialty_ids);
+
+            if (!empty($specialty_ids)) {
+                $count_args['joins'] = [
+                    [
+                        'type'  => 'INNER',
+                        'table' => 'aiclinic_tag_relations tr',
+                        'on'    => 'c.id = tr.clinic_id'
+                    ]
+                ];
+                $count_args['filters']['tr.tag_id'] = $specialty_ids;
+                $count_args['group_by'] = 'c.id';
+                $count_args['distinct'] = 'c.id';
+            }
+        }
+
         return [
             'data'     => $this->aiclinic_get_clinics($args) ?: [],
             'total'    => $this->helper->database->aiclinic_count_record('aiclinic_clinics', []) ?: 0,
-            'filtered' => $this->helper->database->aiclinic_count_record('aiclinic_clinics', $count_args) ?: 0
+            'filtered' => $this->helper->database->aiclinic_count_record('aiclinic_clinics c', $count_args) ?: 0
         ];
     }
 

@@ -120,11 +120,19 @@ class Ai_Clinic_Controller_Clinic
     public function get_refer_clinics($request)
     {
         $body_request = $request->get_json_params();
+
+        $specialty_ids = [];
+        if (!empty($body_request['specialty_ids']) && is_array($body_request['specialty_ids'])) {
+            $specialty_ids = array_map('intval', $body_request['specialty_ids']);
+            $specialty_ids = array_filter($specialty_ids);
+        }
+
         $body = [
             'province' => sanitize_text_field($body_request['province'] ?? ''),
             'district' => sanitize_text_field($body_request['district'] ?? ''),
-            'limit'    => intval($body_request['limit'] ?? 8),
-            'page'     => max(1, intval($body_request['page'] ?? 1)),
+            'specialty_ids' => $specialty_ids,
+            'limit' => intval($body_request['limit'] ?? 8),
+            'page' => max(1, intval($body_request['page'] ?? 1)),
         ];
 
         $offset = ($body['page'] - 1) * $body['limit'];
@@ -132,8 +140,9 @@ class Ai_Clinic_Controller_Clinic
         $result = $this->database->aiclinic_get_clinics_paginated([
             'province' => $body['province'],
             'district' => $body['district'],
-            'limit'    => $body['limit'],
-            'offset'   => $offset,
+            'specialty_ids' => $body['specialty_ids'],
+            'limit' => $body['limit'],
+            'offset' => $offset,
             'is_active' => 'ACTIVE',
         ]);
 
