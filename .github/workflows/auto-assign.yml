@@ -1,0 +1,41 @@
+name: Auto Assign PR Author
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  auto_assign_author:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Install GitHub CLI
+        run: sudo apt-get install -y gh
+
+      - name: Auto assign PR author (if not already assigned)
+        env:
+          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          AUTHOR=${{ github.event.pull_request.user.login }}
+
+          echo "Checking assignees of PR #$PR_NUMBER"
+
+          CURRENT_ASSIGNEES=$(gh pr view "$PR_NUMBER" --json assignees --jq '.assignees[].login')
+
+          if echo "$CURRENT_ASSIGNEES" | grep -qx "$AUTHOR"; then
+            echo "$AUTHOR is already assigned to PR #$PR_NUMBER. Skipping assignment."
+          else
+            echo "Assigning $AUTHOR to PR #$PR_NUMBER"
+            gh pr edit "$PR_NUMBER" --add-assignee "$AUTHOR"
+          fi
