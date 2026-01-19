@@ -161,6 +161,27 @@ class Database_Helper
 
     /**
      * Validate column name to prevent SQL injection
+     * 
+     * @param string $column Column name to validate
+     * @return bool True if valid, false otherwise
+     */
+    private function validate_column($column)
+    {
+        if (strpos($column, '.') !== false) {
+            $parts = explode('.', $column);
+            foreach ($parts as $part) {
+                if (!$this->validate_column_name($part)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        return $this->validate_column_name($column);
+    }
+
+    /**
+     * Validate column name to prevent SQL injection
      */
     private function validate_column_name($column_name)
     {
@@ -222,18 +243,113 @@ class Database_Helper
     }
 
     /**
+     * Build common WHERE conditions and params from args
+     * 
+     * @param array $args Arguments containing search, language, filters
+     * @param string $alias Optional table alias for column references
+     * @return array ['conditions' => array, 'params' => array]
+     */
+    private function build_where_conditions($args, $alias = '')
+    {
+        $conditions = [];
+        $params = [];
+        $prefix = $alias ? "$alias." : '';
+
+        // Search condition
+        if (!empty($args['search']) && !empty($args['column_search'])) {
+            if (!$this->validate_column_name($args['column_search'])) {
+                return ['conditions' => [], 'params' => []];
+            }
+            $like = '%' . $this->wpdb->esc_like($args['search']) . '%';
+            $conditions[] = "{$prefix}`{$args['column_search']}` LIKE %s";
+            $params[] = $like;
+        }
+
+        // Language filter
+        if (!empty($args['language'])) {
+            $conditions[] = "{$prefix}`language` = %s";
+            $params[] = $args['language'];
+        }
+
+        // Custom filters
+        if (!empty($args['filters']) && is_array($args['filters'])) {
+            foreach ($args['filters'] as $col => $val) {
+                if (!$this->validate_column($col)) {
+                    continue;
+                }
+
+                // Handle alias in column if provided
+                $col_with_prefix = (strpos($col, '.') === false && $prefix)
+                    ? $prefix . "`$col`"
+                    : "`$col`";
+
+                if (is_array($val)) {
+                    // Support for IN clause
+                    $placeholders = implode(',', array_fill(0, count($val), '%s'));
+                    $conditions[] = "$col_with_prefix IN ($placeholders)";
+                    $params = array_merge($params, $val);
+                } else {
+                    $conditions[] = "$col_with_prefix = %s";
+                    $params[] = $val;
+                }
+            }
+        }
+
+        return ['conditions' => $conditions, 'params' => $params];
+    }
+
+    /**
+     * Build JOIN clause from args
+     * 
+     * @param array $joins Array of join configurations
+     *                     Each join: ['type' => 'INNER|LEFT|RIGHT', 'table' => 'table_name alias', 'on' => 'condition']
+     * @return string SQL JOIN clause
+     */
+    private function build_joins($joins)
+    {
+        if (empty($joins) || !is_array($joins)) {
+            return '';
+        }
+
+        $join_sql = '';
+        foreach ($joins as $join) {
+            $type = strtoupper($join['type'] ?? 'INNER');
+
+            // Parse table & alias: 'aiclinic_tags d' => table='aiclinic_tags', alias='d'
+            [$join_table, $join_alias] = array_pad(explode(' ', $join['table'], 2), 2, '');
+
+            if (!$this->validate_table_name($join_table)) {
+                continue;
+            }
+
+            $full_table = $this->wpdb->prefix . $join_table . ($join_alias ? " $join_alias" : '');
+
+            $on = $join['on'];
+
+            $join_sql .= " $type JOIN $full_table ON $on ";
+        }
+
+        return $join_sql;
+    }
+
+    /**
      * Retrieve records from a specified table with pagination, optional search by keyword, and language filter.
      *
-     * @param string $table_name     The name of the table to retrieve records from.
-     * @param array $args           Arguments array with keys: search, column_search, language, limit, offset, order_by, sort_direction, filters
+     * @param string $table_name     The name of the table to retrieve records from (can include alias: 'table alias')
+     * @param array $args           Arguments array with keys: search, column_search, language, limit, offset, order_by, sort_direction, filters, select, joins, group_by, having
      *
      * @return array|false An array of records or false on error.
      */
     public function aiclinic_get_all($table_name, $args = [])
     {
-        if (!$this->validate_table_name($table_name)) {
+        // Parse table & alias: 'aiclinic_clinics c' => table='aiclinic_clinics', alias='c'
+        [$table, $alias] = array_pad(explode(' ', $table_name, 2), 2, '');
+
+        if (!$this->validate_table_name($table)) {
             return false;
         }
+
+        $base_table = $this->wpdb->prefix . $table . ($alias ? " $alias" : '');
 
         // Default arguments
         $defaults = [
@@ -245,56 +361,28 @@ class Database_Helper
             'order_by' => 'id',
             'sort_direction' => 'ASC',
             'filters' => [],
-            'select' => '*'
+            'select' => '*',
+            'joins' => [],
+            'group_by' => '',
+            'having' => '',
         ];
 
         $args = wp_parse_args($args, $defaults);
 
-        // Validate column names
-        if (!empty($args['column_search']) && !$this->validate_column_name($args['column_search'])) {
-            return false;
-        }
-
+        // Validate order_by column
         if (!$this->validate_column_name($args['order_by'])) {
             return false;
         }
 
-        $table = $this->wpdb->prefix . $table_name;
-        $conditions = [];
-        $params = [];
+        // Build WHERE conditions (pass alias for proper column prefixing)
+        $where_data = $this->build_where_conditions($args, $alias);
+        $conditions = $where_data['conditions'];
+        $params = $where_data['params'];
 
-        // Search condition
-        if (!empty($args['search']) && !empty($args['column_search'])) {
-            $like = '%' . $this->wpdb->esc_like($args['search']) . '%';
-            $conditions[] = "`{$args['column_search']}` LIKE %s";
-            $params[] = $like;
-        }
+        // Build JOIN clause
+        $join_sql = $this->build_joins($args['joins']);
 
-        // Language filter
-        if (!empty($args['language'])) {
-            $conditions[] = "`language` = %s";
-            $params[] = $args['language'];
-        }
-
-        // Custom filters
-        if (!empty($args['filters']) && is_array($args['filters'])) {
-            foreach ($args['filters'] as $col => $val) {
-                if (!$this->validate_column_name($col)) {
-                    continue;
-                }
-
-                if (is_array($val)) {
-                    // Support for IN clause
-                    $placeholders = implode(',', array_fill(0, count($val), '%s'));
-                    $conditions[] = "`$col` IN ($placeholders)";
-                    $params = array_merge($params, $val);
-                } else {
-                    $conditions[] = "`$col` = %s";
-                    $params[] = $val;
-                }
-            }
-        }
-
+        // Build WHERE clause
         $where = '';
         if (!empty($conditions)) {
             $where = 'WHERE ' . implode(' AND ', $conditions);
@@ -303,7 +391,28 @@ class Database_Helper
         $sort_direction = $this->sanitize_order_direction($args['sort_direction']);
         $select = esc_sql($args['select']);
 
-        $sql = "SELECT $select FROM `$table` $where ORDER BY `{$args['order_by']}` $sort_direction LIMIT %d OFFSET %d";
+        // Handle order_by with potential alias
+        $order_by_col = (strpos($args['order_by'], '.') === false && $alias)
+            ? "$alias.`{$args['order_by']}`"
+            : "`{$args['order_by']}`";
+
+        $sql = "
+            SELECT $select
+            FROM $base_table
+            $join_sql
+            $where
+        ";
+
+        if (!empty($args['group_by'])) {
+            $sql .= " GROUP BY {$args['group_by']} ";
+        }
+
+        if (!empty($args['having'])) {
+            $sql .= " HAVING {$args['having']} ";
+        }
+
+        $sql .= " ORDER BY $order_by_col $sort_direction LIMIT %d OFFSET %d";
+
         $params[] = absint($args['limit']);
         $params[] = absint($args['offset']);
 
@@ -313,14 +422,17 @@ class Database_Helper
     /**
      * Count the total number of records in a table with optional filtering.
      *
-     * @param string $table_name      The name of the database table (without prefix).
-     * @param array $args            Arguments array with keys: search, column_search, language, filters
+     * @param string $table_name      The name of the database table (without prefix, can include alias)
+     * @param array $args            Arguments array with keys: search, column_search, language, filters, joins, group_by, having, distinct
      *
      * @return int|null Returns the total number of matching records, or null on failure.
      */
     public function aiclinic_count_record($table_name, $args = [])
     {
-        if (!$this->validate_table_name($table_name)) {
+        // Parse table & alias
+        [$table, $alias] = array_pad(explode(' ', $table_name, 2), 2, '');
+
+        if (!$this->validate_table_name($table)) {
             return null;
         }
 
@@ -328,54 +440,68 @@ class Database_Helper
             'search' => '',
             'column_search' => '',
             'language' => '',
-            'filters' => []
+            'filters' => [],
+            'joins' => [],
+            'group_by' => '',
+            'having' => '',
+            'distinct' => '',
         ];
 
         $args = wp_parse_args($args, $defaults);
+        $base_table = $this->wpdb->prefix . $table . ($alias ? " $alias" : '');
 
-        if (!empty($args['column_search']) && !$this->validate_column_name($args['column_search'])) {
-            return null;
-        }
+        // Build WHERE conditions
+        $where_data = $this->build_where_conditions($args, $alias);
+        $conditions = $where_data['conditions'];
+        $params = $where_data['params'];
 
-        $table = $this->wpdb->prefix . $table_name;
-        $conditions = [];
-        $params = [];
+        // Build JOIN clause
+        $join_sql = $this->build_joins($args['joins']);
 
-        // Search condition
-        if (!empty($args['search']) && !empty($args['column_search'])) {
-            $conditions[] = "`{$args['column_search']}` LIKE %s";
-            $params[] = '%' . $this->wpdb->esc_like($args['search']) . '%';
-        }
+        // Build WHERE clause
+        $where = $conditions ? 'WHERE ' . implode(' AND ', $conditions) : '';
 
-        // Language filter
-        if (!empty($args['language'])) {
-            $conditions[] = "`language` = %s";
-            $params[] = $args['language'];
-        }
+        // Handle COUNT based on GROUP BY, HAVING, or DISTINCT
+        if (!empty($args['group_by']) || !empty($args['having'])) {
+            // When using GROUP BY, we need to count the number of groups
+            // Use subquery approach for accuracy
+            $inner_sql = "
+                SELECT 1
+                FROM $base_table
+                $join_sql
+                $where
+            ";
 
-        // Custom filters
-        if (!empty($args['filters']) && is_array($args['filters'])) {
-            foreach ($args['filters'] as $col => $val) {
-                if (!$this->validate_column_name($col)) {
-                    continue;
-                }
-                $conditions[] = "`$col` = %s";
-                $params[] = $val;
+            if (!empty($args['group_by'])) {
+                $inner_sql .= " GROUP BY {$args['group_by']} ";
             }
+
+            if (!empty($args['having'])) {
+                $inner_sql .= " HAVING {$args['having']} ";
+            }
+
+            $sql = "SELECT COUNT(*) FROM ($inner_sql) as grouped_count";
+        } elseif (!empty($args['distinct'])) {
+            // COUNT DISTINCT for specific column
+            $sql = "
+            SELECT COUNT(DISTINCT {$args['distinct']})
+            FROM $base_table
+            $join_sql
+            $where
+        ";
+        } else {
+            // Simple COUNT(*)
+            $sql = "
+                SELECT COUNT(*)
+                FROM $base_table
+                $join_sql
+                $where
+            ";
         }
 
-        $where = '';
-        if (!empty($conditions)) {
-            $where = 'WHERE ' . implode(' AND ', $conditions);
-        }
-
-        $sql = "SELECT COUNT(*) FROM `$table` $where";
-
-        if (empty($params)) {
-            return $this->wpdb->get_var($sql);
-        }
-
-        return $this->wpdb->get_var($this->wpdb->prepare($sql, ...$params));
+        return empty($params)
+            ? (int) $this->wpdb->get_var($sql)
+            : (int) $this->wpdb->get_var($this->wpdb->prepare($sql, ...$params));
     }
 
     /**
