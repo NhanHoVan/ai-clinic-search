@@ -278,6 +278,7 @@ class Ai_Clinic_Service_Clinic
                 'id'          => $clinic['id'] ?? '',
                 'name'        => $clinic['name'] ?? '',
                 'description' => $clinic['description'] ?? '',
+                'image'       => $clinic['image'] ?? '',
                 'address'     => $clinic['address'] ?? '',
                 'province'    => $clinic['province'] ?? '',
                 'district'    => $clinic['district'] ?? '',
