@@ -489,9 +489,19 @@ class Ai_Clinic_Proxy_Controller
             );
         }
 
+        // Sanitize specialty_ids array
+        $specialty_ids = [];
+        if (!empty($body_request['specialties'])) {
+            if (is_array($body_request['specialties'])) {
+                $specialty_ids = array_map('intval', $body_request['specialties']);
+                $specialty_ids = array_filter($specialty_ids);
+            }
+        }
+
         $body = [
             'province' => sanitize_text_field($body_request['province']),
             'district' => sanitize_text_field($body_request['district']),
+            'specialty_ids' => $specialty_ids,
             'limit' => sanitize_text_field($body_request['limit']),
             'page' => sanitize_text_field($body_request['page']),
         ];
