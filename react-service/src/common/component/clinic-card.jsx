@@ -58,7 +58,7 @@ export default function ClinicCard({ clinic, loading, onCopy, onViewDetail }) {
 					height={200}
 					draggable={false}
 					alt={clinic.name}
-					src={clinic.img_cover}
+					src={clinic.image}
 					fallback={IMAGE_FALLBACK}
 				/>
 			}

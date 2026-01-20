@@ -103,6 +103,7 @@ export default function App() {
 				body: {
 					province: selectedProvince,
 					district: selectedDistrict,
+					specialties: selectedSpecialtyIds,
 					page,
 					limit,
 				},
@@ -112,7 +113,7 @@ export default function App() {
 			setTotal(data.total || 0);
 			setPage(data.page || page);
 		},
-		[apiFetch, selectedProvince, selectedDistrict]
+		[apiFetch, selectedProvince, selectedDistrict, selectedSpecialtyIds]
 	);
 
 	const handleClinicsRefer = async (page) => {
@@ -129,7 +130,7 @@ export default function App() {
 
 	useEffect(() => {
 		handleClinicsRefer(1);
-	}, [selectedProvince, selectedDistrict]);
+	}, [selectedProvince, selectedDistrict, selectedSpecialtyIds]);
 
 	useEffect(() => {
 		fetchProvinces().catch((e) => message.error(e?.message));
