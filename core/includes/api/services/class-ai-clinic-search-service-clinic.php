@@ -319,4 +319,52 @@ class Ai_Clinic_Service_Clinic
         if (!$email) return "";
         return preg_replace("/^(.{2}).+(@.+)$/", "$1***$2", $email);
     }
+
+    /**
+     * Sync clinic specialties (replace all if provided).
+     *
+     * @param int        $clinic_id
+     * @param array|null $specialties
+     *   - null  => do nothing
+     *   - []    => remove all tags
+     *   - [...] => replace tags
+     *
+     * @return true|WP_Error
+     */
+    public function sync_clinic_specialties($clinic_id, ?array $specialties)
+    {
+        if ($specialties === null) {
+            return true;
+        }
+
+        if (!is_array($specialties)) {
+            return new WP_Error(
+                'invalid_specialties',
+                'specialties must be an array of tag names',
+                ['status' => 400]
+            );
+        }
+
+        $tag_names = array_values(array_unique(array_filter(array_map(
+            static function ($name) {
+                return is_string($name) ? trim($name) : '';
+            },
+            $specialties
+        ))));
+
+        $result = $this->database->aiclinic_sync_clinic_tags_by_name(
+            absint($clinic_id),
+            $tag_names
+        );
+
+        if ($result === false) {
+            return new WP_Error(
+                'tag_sync_failed',
+                'Failed to sync clinic specialties',
+                ['status' => 500]
+            );
+        }
+
+        return true;
+    }
 }

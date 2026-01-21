@@ -312,6 +312,15 @@ class Ai_Clinic_Controller_Clinic
             );
         }
 
+        $specialties = array_key_exists('specialties', $body) ? $body['specialties'] : null;
+        $tag_result = $this->clinic_service->sync_clinic_specialties(
+            $clinic_id,
+            $specialties
+        );
+        if (is_wp_error($tag_result)) {
+            return $tag_result;
+        }
+
         return new WP_REST_Response([
             'clinic_id' => $clinic_id,
             'updated'   => $result,
