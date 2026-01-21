@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS wp_aiclinic_clinics (
     email VARCHAR(255) COMMENT 'Contact email address',
     website VARCHAR(100) COMMENT 'website of clinic',
     description TEXT COMMENT 'Short description or clinic introduction',
+    image VARCHAR(255) COMMENT 'Public URL of the clinic avatar image',
     verify_status ENUM('AI_DETECTED', 'ADMIN_VERIFIED', 'OWNER_VERIFIED') NOT NULL DEFAULT 'AI_DETECTED' COMMENT 'Verification status of the clinic',
     is_active ENUM('ACTIVE', 'HIDDEN') NOT NULL DEFAULT 'ACTIVE' COMMENT 'Display status',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Record creation time',

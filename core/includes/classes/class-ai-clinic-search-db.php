@@ -137,6 +137,7 @@ class Ai_Clinic_Search_DB
      *     @type string $email          Contact email
      *     @type string $website        Website
      *     @type string $description    Clinic description
+     *     @type string $image          Clinic avatar image
      *     @type string $verify_status  Verification status (AI_DETECTED|ADMIN_VERIFIED|OWNER_VERIFIED)
      *     @type string $is_active      Display status (ACTIVE|HIDDEN)
      * }
@@ -145,6 +146,11 @@ class Ai_Clinic_Search_DB
      */
     public function aiclinic_insert_clinic($data)
     {
+        $image = esc_url_raw($data['image'] ?? '');
+        if ($image && !preg_match('/\.(jpg|jpeg|png|webp|gif)$/i', $image)) {
+            $image = '';
+        }
+
         $data_to_insert = [
             'name'          => sanitize_text_field($data['name']),
             'place_id'     => sanitize_text_field($data['place_id']),
@@ -157,6 +163,7 @@ class Ai_Clinic_Search_DB
             'email'         => sanitize_email($data['email'] ?? ''),
             'website'       => sanitize_url($data['website'] ?? ''),
             'description'   => sanitize_textarea_field($data['description'] ?? ''),
+            'image'         => $image,
             'verify_status' => in_array($data['verify_status'] ?? '', ['AI_DETECTED', 'ADMIN_VERIFIED', 'OWNER_VERIFIED'])
                 ? $data['verify_status']
                 : 'AI_DETECTED',
@@ -377,6 +384,14 @@ class Ai_Clinic_Search_DB
 
         if (isset($data['description'])) {
             $data_to_update['description'] = sanitize_textarea_field($data['description']);
+        }
+
+        if (isset($data['image'])) {
+            $image = esc_url_raw($data['image'] ?? '');
+            if ($image && !preg_match('/\.(jpg|jpeg|png|webp|gif)$/i', $image)) {
+                $image = '';
+            }
+            $data_to_update['image'] = $image;
         }
 
         if (isset($data['verify_status']) && in_array($data['verify_status'], ['AI_DETECTED', 'ADMIN_VERIFIED', 'OWNER_VERIFIED'])) {
