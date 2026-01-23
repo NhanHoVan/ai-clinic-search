@@ -167,9 +167,8 @@ class Ai_Clinic_Controller_Clinic
             $user_id = absint($request->get_header('X-INTERNAL-USER-ID'));
         }
 
-        $clinic_id = sanitize_text_field($request->get_param('id'));
-
-        if (empty($clinic_id)) {
+        $clinic_id = absint($request->get_param('id'));
+        if ($clinic_id <= 0) {
             return new WP_Error(
                 'invalid_id',
                 'id is required',
@@ -177,10 +176,27 @@ class Ai_Clinic_Controller_Clinic
             );
         }
 
-        $clinic_id = absint($clinic_id);
-        $result = $this->database->aiclinic_get_clinic_by_id($clinic_id);
+        $clinic = $this->database->aiclinic_get_clinic_by_id($clinic_id);
+        if (empty($clinic)) {
+            return new WP_Error(
+                'clinic_not_found',
+                'Clinic not found',
+                ['status' => 404]
+            );
+        }
 
-        return new WP_REST_Response($result, 200);
+        $tags = $this->database->aiclinic_get_tags_by_clinic($clinic_id);
+        $clinic['specialties'] = array_map(
+            static function ($tag) {
+                return [
+                    'id'   => (int) $tag['id'],
+                    'name' => $tag['name'],
+                ];
+            },
+            $tags
+        );
+
+        return new WP_REST_Response($clinic, 200);
     }
 
     /**
