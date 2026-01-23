@@ -17,8 +17,13 @@ export default function EditClinicModal({
 
 	React.useEffect(() => {
 		if (clinic) {
-			form.setFieldsValue(clinic);
-			initialValuesRef.current = clinic;
+			const formValues = {
+				...clinic,
+				specialties: (clinic.specialties || []).map((s) => s.name),
+			};
+
+			form.setFieldsValue(formValues);
+			initialValuesRef.current = formValues;
 		} else {
 			form.resetFields();
 			initialValuesRef.current = null;
@@ -31,8 +36,15 @@ export default function EditClinicModal({
 			return;
 		}
 
+		const isEqual = (a, b) => {
+			if (Array.isArray(a) && Array.isArray(b)) {
+				return JSON.stringify(a) === JSON.stringify(b);
+			}
+			return a === b;
+		};
+
 		const changedValues = Object.keys(values).reduce((acc, key) => {
-			if (values[key] !== initialValuesRef.current[key]) {
+			if (!isEqual(values[key], initialValuesRef.current[key])) {
 				acc[key] = values[key];
 			}
 			return acc;

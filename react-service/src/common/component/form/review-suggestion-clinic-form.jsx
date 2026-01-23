@@ -70,13 +70,26 @@ export default function ReviewSuggestionForm({ form, onFinish, suggestion }) {
 					{Object.entries(suggested_fields || {}).map(
 						([key, value]) => (
 							<Descriptions.Item key={key} label={key}>
-								{Array.isArray(value)
-									? value.join(", ")
-									: typeof value === "object"
-									? JSON.stringify(value, null, 2)
-									: String(value)}
+								{key === "specialties" &&
+								Array.isArray(value) ? (
+									<div>
+										{value.map((name) => (
+											<Tag key={name} color="blue">
+												{name}
+											</Tag>
+										))}
+									</div>
+								) : Array.isArray(value) ? (
+									value.join(", ")
+								) : typeof value === "object" ? (
+									<pre style={{ margin: 0 }}>
+										{JSON.stringify(value, null, 2)}
+									</pre>
+								) : (
+									String(value)
+								)}
 							</Descriptions.Item>
-						)
+						),
 					)}
 				</Descriptions>
 			</Form.Item>
@@ -91,14 +104,14 @@ export default function ReviewSuggestionForm({ form, onFinish, suggestion }) {
 							if (status === "PENDING" && value === "PENDING") {
 								return Promise.reject(
 									new Error(
-										"Vui lòng chọn trạng thái duyệt hoặc từ chối"
-									)
+										"Vui lòng chọn trạng thái duyệt hoặc từ chối",
+									),
 								);
 							}
 
 							if (!value) {
 								return Promise.reject(
-									new Error("Vui lòng chọn trạng thái")
+									new Error("Vui lòng chọn trạng thái"),
 								);
 							}
 

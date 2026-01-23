@@ -30,7 +30,7 @@ const IconMap = {
 	CheckCircleTwoTone: <CheckCircleTwoTone twoToneColor="#52c41a" />,
 };
 
-export default function ClinicsTab() {
+export default function ClinicsTab({ specialties }) {
 	const { apiFetch } = useWordPress();
 
 	const [searchText, setSearchText] = useState("");
@@ -58,7 +58,7 @@ export default function ClinicsTab() {
 			});
 			setProvinces(Array.isArray(data) ? data : []);
 		},
-		[apiFetch]
+		[apiFetch],
 	);
 
 	const fetchDistricts = useCallback(
@@ -75,7 +75,7 @@ export default function ClinicsTab() {
 			});
 			setDistricts(Array.isArray(data) ? data : []);
 		},
-		[apiFetch, selectedProvince]
+		[apiFetch, selectedProvince],
 	);
 
 	const fetchClinicsRefer = useCallback(
@@ -95,7 +95,7 @@ export default function ClinicsTab() {
 			setTotal(data.total || 0);
 			setPage(page);
 		},
-		[apiFetch, selectedProvince, selectedDistrict, limit]
+		[apiFetch, selectedProvince, selectedDistrict, limit],
 	);
 
 	const loadClinics = async ({ page = 1, search = searchText }) => {
@@ -189,7 +189,7 @@ export default function ClinicsTab() {
 			setSelectedClinic(data);
 			return data;
 		},
-		[apiFetch]
+		[apiFetch],
 	);
 
 	const updateClinicDetail = useCallback(
@@ -204,7 +204,7 @@ export default function ClinicsTab() {
 				},
 			});
 		},
-		[apiFetch, selectedClinic]
+		[apiFetch, selectedClinic],
 	);
 
 	const handleSubmitClinic = async (data) => {
@@ -251,7 +251,7 @@ export default function ClinicsTab() {
 				params: { id },
 			});
 		},
-		[apiFetch]
+		[apiFetch],
 	);
 
 	const handleDeleteClinic = async (id) => {
@@ -398,6 +398,7 @@ export default function ClinicsTab() {
 						form={form}
 						onFinish={onFinish}
 						provinces={provinces}
+						specialties={specialties}
 					/>
 				)}
 			/>
