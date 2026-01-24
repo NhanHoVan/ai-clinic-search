@@ -279,15 +279,19 @@ class Database_Helper
                 }
 
                 // Handle alias in column if provided
-                $col_with_prefix = (strpos($col, '.') === false && $prefix)
-                    ? $prefix . "`$col`"
-                    : "`$col`";
+                if (strpos($col, '.') !== false) {
+                    [$tbl, $column] = explode('.', $col, 2);
+                    $col_with_prefix = "$tbl.`$column`";
+                } else {
+                    $col_with_prefix = $prefix ? "{$prefix}`$col`" : "`$col`";
+                }
 
                 if (is_array($val)) {
-                    // Support for IN clause
-                    $placeholders = implode(',', array_fill(0, count($val), '%s'));
+                    $placeholders = implode(',', array_fill(0, count($val), '%d'));
                     $conditions[] = "$col_with_prefix IN ($placeholders)";
-                    $params = array_merge($params, $val);
+                    foreach ($val as $v) {
+                        $params[] = intval($v);
+                    }
                 } else {
                     $conditions[] = "$col_with_prefix = %s";
                     $params[] = $val;

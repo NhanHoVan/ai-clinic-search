@@ -271,52 +271,44 @@ class Ai_Clinic_Search_DB
      */
     public function aiclinic_get_clinics_paginated($args = [])
     {
-        // Prepare filters for count
-        $count_args = [
+        // Prepare filters
+        $filter_args = [
             'search'        => $args['search'] ?? '',
             'column_search' => $args['column_search'] ?? 'name',
-            'filters'       => []
+            'filters'       => [],
+            'joins'         => [],
         ];
 
         if (!empty($args['province'])) {
-            $count_args['filters']['province'] = sanitize_text_field($args['province']);
+            $filter_args['filters']['province'] = $args['province'];
         }
 
         if (!empty($args['district'])) {
-            $count_args['filters']['district'] = sanitize_text_field($args['district']);
-        }
-
-        if (!empty($args['verify_status'])) {
-            $count_args['filters']['verify_status'] = sanitize_text_field($args['verify_status']);
+            $filter_args['filters']['district'] = $args['district'];
         }
 
         if (!empty($args['is_active'])) {
-            $count_args['filters']['is_active'] = sanitize_text_field($args['is_active']);
+            $filter_args['filters']['is_active'] = $args['is_active'];
         }
 
-        // Handle specialty_ids filter
-        if (!empty($args['specialty_ids']) && is_array($args['specialty_ids'])) {
-            $specialty_ids = array_map('intval', $args['specialty_ids']);
-            $specialty_ids = array_filter($specialty_ids);
-
-            if (!empty($specialty_ids)) {
-                $count_args['joins'] = [
-                    [
-                        'type'  => 'INNER',
-                        'table' => 'aiclinic_tag_relations tr',
-                        'on'    => 'c.id = tr.clinic_id'
-                    ]
-                ];
-                $count_args['filters']['tr.tag_id'] = $specialty_ids;
-                $count_args['group_by'] = 'c.id';
-                $count_args['distinct'] = 'c.id';
-            }
+        if (!empty($args['specialty_ids'])) {
+            $filter_args['joins'][] = [
+                'type'  => 'INNER',
+                'table' => 'aiclinic_tag_relations tr',
+                'on'    => 'c.id = tr.clinic_id'
+            ];
+            $filter_args['filters']['tr.tag_id'] = $args['specialty_ids'];
+            $filter_args['group_by'] = 'c.id';
+            $filter_args['distinct'] = 'c.id';
         }
 
         return [
-            'data'     => $this->aiclinic_get_clinics($args) ?: [],
+            'data'     => $this->aiclinic_get_clinics(array_merge(
+                $args,
+                $filter_args
+            )) ?: [],
             'total'    => $this->helper->database->aiclinic_count_record('aiclinic_clinics', []) ?: 0,
-            'filtered' => $this->helper->database->aiclinic_count_record('aiclinic_clinics c', $count_args) ?: 0
+            'filtered' => $this->helper->database->aiclinic_count_record('aiclinic_clinics c', $filter_args) ?: 0
         ];
     }
 
