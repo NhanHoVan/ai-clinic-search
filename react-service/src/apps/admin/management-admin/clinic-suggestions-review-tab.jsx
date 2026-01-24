@@ -4,7 +4,7 @@ import EditClinicModal from "@/component/edit-clinic-modal.jsx";
 import ReviewSuggestionForm from "@/component/form/review-suggestion-clinic-form.jsx";
 import { useWordPress } from "@/hooks/use-wordpress";
 
-export default function ClinicSuggestionReviewTab() {
+export default function ClinicSuggestionReviewTab({ specialties }) {
 	const { apiFetch } = useWordPress();
 
 	const [clinicSuggestions, setClinicSuggestions] = useState([]);
@@ -31,7 +31,7 @@ export default function ClinicSuggestionReviewTab() {
 			setTotal(data.total || 0);
 			setPage(page);
 		},
-		[apiFetch]
+		[apiFetch],
 	);
 
 	const loadClinics = async ({ page = 1 }) => {
@@ -67,7 +67,7 @@ export default function ClinicSuggestionReviewTab() {
 				},
 			});
 		},
-		[apiFetch]
+		[apiFetch],
 	);
 
 	const handleSubmitReview = async (data) => {

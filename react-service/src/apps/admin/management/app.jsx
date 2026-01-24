@@ -44,6 +44,8 @@ export default function App() {
 	const [loadingModel, setLoadingModel] = useState(false);
 	const [selectedClinic, setSelectedClinic] = useState(null);
 
+	const [specialties, setSpecialties] = useState([]);
+
 	const fetchProvinces = useCallback(
 		async (search = "") => {
 			const data = await apiFetch("/provinces", {
@@ -52,7 +54,7 @@ export default function App() {
 			});
 			setProvinces(Array.isArray(data) ? data : []);
 		},
-		[apiFetch]
+		[apiFetch],
 	);
 
 	const fetchDistricts = useCallback(
@@ -69,7 +71,7 @@ export default function App() {
 			});
 			setDistricts(Array.isArray(data) ? data : []);
 		},
-		[apiFetch, selectedProvince]
+		[apiFetch, selectedProvince],
 	);
 
 	const fetchClinicsRefer = useCallback(
@@ -89,7 +91,7 @@ export default function App() {
 			setTotal(data.total || 0);
 			setPage(page);
 		},
-		[apiFetch, selectedProvince, selectedDistrict, limit]
+		[apiFetch, selectedProvince, selectedDistrict, limit],
 	);
 
 	const loadClinics = async ({ page = 1, search = searchText }) => {
@@ -175,7 +177,7 @@ export default function App() {
 			setSelectedClinic(data);
 			return data;
 		},
-		[apiFetch]
+		[apiFetch],
 	);
 
 	const updateClinicDetail = useCallback(
@@ -190,7 +192,7 @@ export default function App() {
 				},
 			});
 		},
-		[apiFetch, selectedClinic]
+		[apiFetch, selectedClinic],
 	);
 
 	const createSuggestClinic = useCallback(
@@ -205,7 +207,7 @@ export default function App() {
 				},
 			});
 		},
-		[apiFetch]
+		[apiFetch],
 	);
 
 	const handleSubmitClinic = async (data) => {
@@ -247,6 +249,22 @@ export default function App() {
 			setLoadingModel(false);
 		}
 	};
+
+	const fetchSpecialties = useCallback(async () => {
+		try {
+			const data = await apiFetch("/specialties", { method: "GET" });
+
+			setSpecialties(
+				Array.isArray(data?.specialties) ? data.specialties : [],
+			);
+		} catch (e) {
+			message.error(e?.message || "Không thể tải danh sách chuyên khoa");
+		}
+	}, [apiFetch]);
+
+	useEffect(() => {
+		fetchSpecialties();
+	}, [fetchSpecialties]);
 
 	const columns = [
 		{
@@ -377,6 +395,7 @@ export default function App() {
 						form={form}
 						onFinish={onFinish}
 						provinces={provinces}
+						specialties={specialties}
 					/>
 				)}
 			/>

@@ -1,10 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
-import { Form, Input, Radio, Select, message } from "antd";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Form, Input, Select, message } from "antd";
 import { useWordPress } from "@/hooks/use-wordpress";
 
 const { TextArea } = Input;
 
-export default function EditClinicAdminForm({ form, onFinish, provinces }) {
+export default function EditClinicAdminForm({
+	form,
+	onFinish,
+	provinces,
+	specialties,
+}) {
 	const { apiFetch } = useWordPress();
 	const [districts, setDistricts] = useState([]);
 
@@ -24,11 +29,11 @@ export default function EditClinicAdminForm({ form, onFinish, provinces }) {
 				setDistricts(Array.isArray(data) ? data : []);
 			} catch (e) {
 				message.error(
-					e?.message || "Không thể tải danh sách quận/huyện"
+					e?.message || "Không thể tải danh sách quận/huyện",
 				);
 			}
 		},
-		[apiFetch]
+		[apiFetch],
 	);
 
 	useEffect(() => {
@@ -41,6 +46,15 @@ export default function EditClinicAdminForm({ form, onFinish, provinces }) {
 			district: undefined,
 		});
 	};
+
+	const options = useMemo(
+		() =>
+			(specialties || []).map((s) => ({
+				label: s.name,
+				value: s.name,
+			})),
+		[specialties],
+	);
 
 	return (
 		<Form
@@ -71,6 +85,25 @@ export default function EditClinicAdminForm({ form, onFinish, provinces }) {
 				rules={[{ required: true, message: "Vui lòng nhập địa chỉ" }]}
 			>
 				<Input />
+			</Form.Item>
+
+			<Form.Item
+				label="Chuyên khoa"
+				name="specialties"
+				rules={[
+					{
+						required: true,
+						message: "Vui lòng nhập các chuyên khoa phù hợp",
+					},
+				]}
+			>
+				<Select
+					mode="tags"
+					placeholder="Nhập hoặc chọn chuyên khoa"
+					options={options}
+					allowClear
+					showSearch
+				/>
 			</Form.Item>
 
 			<Form.Item
