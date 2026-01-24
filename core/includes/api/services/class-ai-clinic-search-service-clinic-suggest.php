@@ -22,10 +22,16 @@ class Ai_Clinic_Service_Clinic_Suggest
      */
     private $helper;
 
+    /**
+     * @var Ai_Clinic_Service_Clinic Clinic instance
+     */
+    private $clinic_service;
+
     public function __construct()
     {
         $this->database = new Ai_Clinic_Search_DB();
         $this->helper = new Ai_Clinic_Search_Helpers();
+        $this->clinic_service = new Ai_Clinic_Service_Clinic();
     }
 
     /**
@@ -192,18 +198,33 @@ class Ai_Clinic_Service_Clinic_Suggest
      */
     private function create_clinic_from_suggestion($suggested_fields, $verify_status)
     {
-        $data = array_merge($suggested_fields, [
-            'verify_status' => $verify_status,
-            'is_active'     => 'ACTIVE',
-        ]);
+        $specialties = array_key_exists('specialties', $suggested_fields)
+            ? $suggested_fields['specialties']
+            : null;
 
-        $new_clinic_id = $this->database->aiclinic_insert_clinic($data);
+        $clinic_data = array_merge(
+            array_diff_key($suggested_fields, ['specialties' => true]),
+            [
+                'verify_status' => $verify_status,
+                'is_active'     => 'ACTIVE',
+            ]
+        );
+
+        $new_clinic_id = $this->database->aiclinic_insert_clinic($clinic_data);
         if ($new_clinic_id === false) {
             return new WP_Error(
                 'insert_failed',
                 'Failed to create clinic',
                 ['status' => 500]
             );
+        }
+
+        $tag_result = $this->clinic_service->sync_clinic_specialties(
+            $new_clinic_id,
+            $specialties
+        );
+        if (is_wp_error($tag_result)) {
+            return $tag_result;
         }
 
         return $new_clinic_id;
@@ -219,9 +240,16 @@ class Ai_Clinic_Service_Clinic_Suggest
      */
     private function update_clinic_from_suggestion($clinic_id, $suggested_fields, $verify_status)
     {
-        $update_fields = array_merge($suggested_fields, [
-            'verify_status' => $verify_status,
-        ]);
+        $specialties = array_key_exists('specialties', $suggested_fields)
+            ? $suggested_fields['specialties']
+            : null;
+
+        $update_fields = array_merge(
+            array_diff_key($suggested_fields, ['specialties' => true]),
+            [
+                'verify_status' => $verify_status,
+            ]
+        );
 
         $updated = $this->database->aiclinic_update_clinic(
             $clinic_id,
@@ -234,6 +262,14 @@ class Ai_Clinic_Service_Clinic_Suggest
                 'Failed to update clinic',
                 ['status' => 500]
             );
+        }
+
+        $tag_result = $this->clinic_service->sync_clinic_specialties(
+            $clinic_id,
+            $specialties
+        );
+        if (is_wp_error($tag_result)) {
+            return $tag_result;
         }
 
         return true;
