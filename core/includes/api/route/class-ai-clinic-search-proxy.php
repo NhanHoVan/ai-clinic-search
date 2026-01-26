@@ -199,14 +199,14 @@ class Ai_Clinic_Proxy_Controller
             return $rate_check;
         }
 
-        $cache_key = 'aiclinic_proxy_' . md5($endpoint . serialize($params));
-        $is_detail = ($endpoint === '/clinic' && isset($params['id']));
-        if (!$is_detail) {
-            $cached = get_transient($cache_key);
-            if ($cached !== false) {
-                return $cached;
-            }
-        }
+        // $cache_key = 'aiclinic_proxy_' . md5($endpoint . serialize($params));
+        // $is_detail = ($endpoint === '/clinic' && isset($params['id']));
+        // if (!$is_detail) {
+        //     $cached = get_transient($cache_key);
+        //     if ($cached !== false) {
+        //         return $cached;
+        //     }
+        // }
 
         $api_base = Ai_Clinic_REST_Register::get_base($base);
         $url = rest_url(ltrim($api_base . $endpoint, '/'));
@@ -253,9 +253,9 @@ class Ai_Clinic_Proxy_Controller
             return new WP_Error('invalid_json', 'Invalid response from API', ['status' => 500]);
         }
 
-        if ($status_code === 200 && !$is_detail) {
-            set_transient($cache_key, $data, self::CACHE_TTL);
-        }
+        // if ($status_code === 200 && !$is_detail) {
+        //     set_transient($cache_key, $data, self::CACHE_TTL);
+        // }
 
         return $data;
     }

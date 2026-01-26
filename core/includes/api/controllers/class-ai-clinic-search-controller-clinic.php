@@ -328,7 +328,7 @@ class Ai_Clinic_Controller_Clinic
             );
         }
 
-        $specialties = array_key_exists('specialties', $body) ? $body['specialties'] : null;
+        $specialties = array_key_exists('specialties', $body['update_fields']) ? $body['update_fields']['specialties'] : null;
         $tag_result = $this->clinic_service->sync_clinic_specialties(
             $clinic_id,
             $specialties
@@ -542,6 +542,15 @@ class Ai_Clinic_Controller_Clinic
                 case 'place_id':
                     $sanitized[$key] = sanitize_text_field($value);
                     break;
+
+                case 'specialties':
+                    if (is_array($value)) {
+                        $sanitized[$key] = array_values(array_filter(array_map(
+                            'sanitize_text_field',
+                            $value
+                        )));
+                    }
+                    break;
             }
         }
         return $sanitized;
@@ -558,6 +567,7 @@ class Ai_Clinic_Controller_Clinic
         'website',
         'description',
         'image',
+        'specialties',
     ];
 
     /**
