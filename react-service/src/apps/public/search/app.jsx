@@ -9,6 +9,8 @@ import SearchHeader from "@/component/search-header.jsx";
 import ClinicSearchList from "@/component/clinic-search-list.jsx";
 import SpecialtyTags from "@/component/specialty-tags";
 
+import dummyData from "../../../dummy-data.json";
+
 const { Title } = Typography;
 
 export default function App() {
@@ -45,7 +47,7 @@ export default function App() {
 			});
 			setProvinces(Array.isArray(data) ? data : []);
 		},
-		[apiFetch]
+		[apiFetch],
 	);
 
 	const fetchDistricts = useCallback(
@@ -62,7 +64,7 @@ export default function App() {
 			});
 			setDistricts(Array.isArray(data) ? data : []);
 		},
-		[apiFetch, selectedProvince]
+		[apiFetch, selectedProvince],
 	);
 
 	const fetchClinicsSearch = useCallback(
@@ -94,7 +96,7 @@ export default function App() {
 				}
 			}
 		},
-		[apiFetch, selectedProvince, selectedDistrict, selectedSpecialtyIds]
+		[apiFetch, selectedProvince, selectedDistrict, selectedSpecialtyIds],
 	);
 
 	const fetchClinicsRefer = useCallback(
@@ -113,7 +115,7 @@ export default function App() {
 			setTotal(data.total || 0);
 			setPage(data.page || page);
 		},
-		[apiFetch, selectedProvince, selectedDistrict, selectedSpecialtyIds]
+		[apiFetch, selectedProvince, selectedDistrict, selectedSpecialtyIds],
 	);
 
 	const handleClinicsRefer = async (page) => {
@@ -122,6 +124,7 @@ export default function App() {
 		try {
 			await fetchClinicsRefer(page);
 		} catch (e) {
+			setClinicsRefer(dummyData);
 			message.error(e?.message);
 		} finally {
 			setLoadingRefer(false);
@@ -151,7 +154,7 @@ export default function App() {
 			const normRegion = normalizeText(regionName);
 
 			const found = provinces.find((p) =>
-				normalizeText(p.name).includes(normRegion)
+				normalizeText(p.name).includes(normRegion),
 			);
 
 			if (found) {
@@ -236,16 +239,39 @@ export default function App() {
 		}
 	};
 
-	const handleClickCopy = (clinicName) => {
-		// TODO update handle for copy clinic infor
-		message.success(`Đã copy đường dẫn tới phòng khám: ${clinicName}`);
+	const handleOpenLink = (link) => {
+		if (typeof link !== "string") return;
+
+		const trimmed = link.trim();
+		if (!trimmed) return;
+
+		const url = /^https?:\/\//i.test(trimmed)
+			? trimmed
+			: `https://${trimmed}`;
+
+		window.open(url, "_blank", "noopener,noreferrer");
 	};
 
 	const handleDetailClinic = (clinicId) => {
 		// TODO update handle for detail clinic
 		message.success(
-			`Mở trong tab mới tới chi tiết phòng khám có ID: ${clinicId}`
+			`Mở trong tab mới tới chi tiết phòng khám có ID: ${clinicId}`,
 		);
+	};
+
+	const openMapByClinicId = (clinicId) => {
+		const clinic = clinicsRefer.find(
+			(c) => String(c.id) === String(clinicId),
+		);
+
+		if (!clinic || clinic.lat == null || clinic.lng == null) {
+			message.error("Không tìm thấy tọa độ phòng khám");
+			return;
+		}
+
+		const { lat, lng } = clinic;
+		const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+		window.open(url, "_blank");
 	};
 
 	const fetchSpecialties = useCallback(async () => {
@@ -253,7 +279,7 @@ export default function App() {
 			method: "GET",
 		});
 		setSpecialties(
-			Array.isArray(data?.specialties) ? data.specialties : []
+			Array.isArray(data?.specialties) ? data.specialties : [],
 		);
 	}, [apiFetch]);
 
@@ -274,7 +300,7 @@ export default function App() {
 
 	const handleSpecialtyChange = (id) => {
 		setSelectedSpecialtyIds((prev) =>
-			prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+			prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
 		);
 	};
 
@@ -320,16 +346,34 @@ export default function App() {
 						Tham khảo các địa chỉ khác:
 					</Title>
 					<Row gutter={[16, 16]}>
-						{clinicsRefer.map((clinic, index) => (
-							<Col key={index} xs={24} sm={12} md={12} lg={6}>
-								<ClinicCard
-									clinic={clinic}
-									loading={loadingRefer}
-									onCopy={handleClickCopy}
-									onViewDetail={handleDetailClinic}
-								/>
-							</Col>
-						))}
+						{clinicsRefer.map((clinic, index) => {
+							const hasLocation =
+								Number.isFinite(Number(clinic.lat)) &&
+								Number.isFinite(Number(clinic.lng)) &&
+								clinic.lat >= -90 &&
+								clinic.lat <= 90 &&
+								clinic.lng >= -180 &&
+								clinic.lng <= 180;
+							return (
+								<Col key={index} xs={24} sm={12} md={12} lg={6}>
+									<ClinicCard
+										clinic={clinic}
+										loading={loadingRefer}
+										onOpenLink={
+											clinic.website
+												? handleOpenLink
+												: null
+										}
+										onViewDetail={handleDetailClinic}
+										onViewMap={
+											hasLocation
+												? openMapByClinicId
+												: null
+										}
+									/>
+								</Col>
+							);
+						})}
 					</Row>
 					<Pagination
 						style={{ marginTop: 20 }}
