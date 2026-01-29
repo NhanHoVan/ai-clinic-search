@@ -11,6 +11,8 @@ export default function EditClinicModal({
 	okeText,
 	cancelText,
 	renderForm,
+	showFooter = true,
+	showCloseIcon = true,
 }) {
 	const [form] = Form.useForm();
 	const initialValuesRef = React.useRef(null);
@@ -58,13 +60,15 @@ export default function EditClinicModal({
 
 	return (
 		<Modal
-			title={<span style={{ fontSize: 20 }}>{title}</span>}
+			title={title && <span style={{ fontSize: 20 }}>{title}</span>}
 			open={open}
 			onCancel={onCancel}
-			onOk={() => form.submit()}
+			onOk={showFooter ? () => form.submit() : undefined}
 			confirmLoading={loading}
 			okText={okeText}
 			cancelText={cancelText}
+			footer={showFooter ? undefined : null}
+			closable={showCloseIcon}
 			width={{
 				xs: "90%",
 				md: "80%",
@@ -73,6 +77,7 @@ export default function EditClinicModal({
 			}}
 			maskClosable={false}
 			style={{ top: 50 }}
+			destroyOnHidden={true}
 		>
 			{renderForm && renderForm(form, handleSubmit)}
 		</Modal>

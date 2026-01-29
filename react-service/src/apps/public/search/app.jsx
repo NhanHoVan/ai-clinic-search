@@ -6,10 +6,10 @@ import { useGeoLocation } from "@/hooks/use-geo-location";
 import { useLocationPreference } from "@/hooks/use-location-preference";
 import ClinicCard from "@/component/clinic-card.jsx";
 import SearchHeader from "@/component/search-header.jsx";
+import EditClinicModal from "@/component/edit-clinic-modal.jsx";
+import ClinicContactContent from "@/component/clinic-contact-content.jsx";
 import ClinicSearchList from "@/component/clinic-search-list.jsx";
 import SpecialtyTags from "@/component/specialty-tags";
-
-import dummyData from "../../../dummy-data.json";
 
 const { Title } = Typography;
 
@@ -38,6 +38,9 @@ export default function App() {
 	const [specialties, setSpecialties] = useState([]);
 	const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState([]);
 	const [loadingSpecialties, setLoadingSpecialties] = useState(false);
+
+	const [openModel, setOpenModel] = useState(false);
+	const [selectedClinic, setSelectedClinic] = useState(null);
 
 	const fetchProvinces = useCallback(
 		async (search = "") => {
@@ -124,7 +127,6 @@ export default function App() {
 		try {
 			await fetchClinicsRefer(page);
 		} catch (e) {
-			setClinicsRefer(dummyData);
 			message.error(e?.message);
 		} finally {
 			setLoadingRefer(false);
@@ -253,25 +255,12 @@ export default function App() {
 	};
 
 	const handleDetailClinic = (clinicId) => {
-		// TODO update handle for detail clinic
-		message.success(
-			`Mở trong tab mới tới chi tiết phòng khám có ID: ${clinicId}`,
-		);
-	};
-
-	const openMapByClinicId = (clinicId) => {
 		const clinic = clinicsRefer.find(
 			(c) => String(c.id) === String(clinicId),
 		);
-
-		if (!clinic || clinic.lat == null || clinic.lng == null) {
-			message.error("Không tìm thấy tọa độ phòng khám");
-			return;
-		}
-
-		const { lat, lng } = clinic;
-		const url = `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-		window.open(url, "_blank");
+		// TODO call getClinicCard API
+		setSelectedClinic(clinic);
+		setOpenModel(true);
 	};
 
 	const fetchSpecialties = useCallback(async () => {
@@ -347,13 +336,6 @@ export default function App() {
 					</Title>
 					<Row gutter={[16, 16]}>
 						{clinicsRefer.map((clinic, index) => {
-							const hasLocation =
-								Number.isFinite(Number(clinic.lat)) &&
-								Number.isFinite(Number(clinic.lng)) &&
-								clinic.lat >= -90 &&
-								clinic.lat <= 90 &&
-								clinic.lng >= -180 &&
-								clinic.lng <= 180;
 							return (
 								<Col key={index} xs={24} sm={12} md={12} lg={6}>
 									<ClinicCard
@@ -365,11 +347,6 @@ export default function App() {
 												: null
 										}
 										onViewDetail={handleDetailClinic}
-										onViewMap={
-											hasLocation
-												? openMapByClinicId
-												: null
-										}
 									/>
 								</Col>
 							);
@@ -385,6 +362,21 @@ export default function App() {
 					/>
 				</div>
 			) : null}
+
+			<EditClinicModal
+				open={openModel}
+				clinic={selectedClinic}
+				onCancel={() => {
+					setOpenModel(false);
+					setSelectedClinic(null);
+				}}
+				title=""
+				showFooter={false}
+				showCloseIcon={true}
+				renderForm={() => (
+					<ClinicContactContent clinic={selectedClinic} />
+				)}
+			/>
 		</div>
 	);
 }
