@@ -371,6 +371,7 @@ export default function App() {
 					setSelectedClinic(null);
 				}}
 				title=""
+				centered
 				showFooter={false}
 				showCloseIcon={true}
 				renderForm={() => (

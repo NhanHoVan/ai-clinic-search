@@ -13,6 +13,8 @@ export default function EditClinicModal({
 	renderForm,
 	showFooter = true,
 	showCloseIcon = true,
+	centered = false,
+	style,
 }) {
 	const [form] = Form.useForm();
 	const initialValuesRef = React.useRef(null);
@@ -76,7 +78,11 @@ export default function EditClinicModal({
 				xl: "50%",
 			}}
 			maskClosable={false}
-			style={{ top: 50 }}
+			centered={centered}
+			style={{
+				top: centered ? undefined : 50,
+				...style,
+			}}
 			destroyOnHidden={true}
 		>
 			{renderForm && renderForm(form, handleSubmit)}
