@@ -3,8 +3,9 @@ import {
 	ExclamationCircleFilled,
 	CheckCircleFilled,
 	CheckCircleTwoTone,
-	CopyOutlined,
-	EyeOutlined,
+	ExportOutlined,
+	CompassOutlined,
+	PicLeftOutlined,
 } from "@ant-design/icons";
 import { IMAGE_FALLBACK } from "../utils/image";
 import {
@@ -13,6 +14,7 @@ import {
 	getStatusIcon,
 	getStatusTooltip,
 } from "../utils/utils";
+import ActionIcon from "@/component/action-icon";
 
 const IconMap = {
 	ExclamationCircleFilled: (
@@ -24,26 +26,35 @@ const IconMap = {
 
 const { Meta } = Card;
 
-export default function ClinicCard({ clinic, loading, onCopy, onViewDetail }) {
-	const actions = [];
-	if (onCopy) {
-		actions.push(
-			<CopyOutlined
-				key="copy"
-				style={{ color: "#4ecdc4" }}
-				onClick={() => onCopy(clinic.name)}
-			/>
-		);
-	}
-	if (onViewDetail) {
-		actions.push(
-			<EyeOutlined
-				key="detail"
-				style={{ color: "#4e50cdff" }}
-				onClick={() => onViewDetail(clinic.id)}
-			/>
-		);
-	}
+export default function ClinicCard({
+	clinic,
+	loading,
+	onOpenLink,
+	onViewDetail,
+	onViewMap,
+}) {
+	const actions = [
+		<ActionIcon
+			Icon={CompassOutlined}
+			enabled={!!onViewMap}
+			color="#c74646"
+			onClick={() => onViewMap(clinic.id)}
+		/>,
+
+		<ActionIcon
+			Icon={PicLeftOutlined}
+			enabled={!!onViewDetail}
+			color="#4e50cdff"
+			onClick={() => onViewDetail(clinic.id)}
+		/>,
+
+		<ActionIcon
+			Icon={ExportOutlined}
+			enabled={!!onOpenLink}
+			color="#4ecdc4"
+			onClick={() => onOpenLink(clinic.website)}
+		/>,
+	];
 
 	return (
 		<Card
@@ -60,6 +71,7 @@ export default function ClinicCard({ clinic, loading, onCopy, onViewDetail }) {
 					alt={clinic.name}
 					src={clinic.image}
 					fallback={IMAGE_FALLBACK}
+					preview={false}
 				/>
 			}
 			actions={actions.length > 0 ? actions : undefined}

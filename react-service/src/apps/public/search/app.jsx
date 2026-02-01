@@ -6,6 +6,8 @@ import { useGeoLocation } from "@/hooks/use-geo-location";
 import { useLocationPreference } from "@/hooks/use-location-preference";
 import ClinicCard from "@/component/clinic-card.jsx";
 import SearchHeader from "@/component/search-header.jsx";
+import EditClinicModal from "@/component/edit-clinic-modal.jsx";
+import ClinicContactContent from "@/component/clinic-contact-content.jsx";
 import ClinicSearchList from "@/component/clinic-search-list.jsx";
 import SpecialtyTags from "@/component/specialty-tags";
 
@@ -37,6 +39,9 @@ export default function App() {
 	const [selectedSpecialtyIds, setSelectedSpecialtyIds] = useState([]);
 	const [loadingSpecialties, setLoadingSpecialties] = useState(false);
 
+	const [openModel, setOpenModel] = useState(false);
+	const [selectedClinic, setSelectedClinic] = useState(null);
+
 	const fetchProvinces = useCallback(
 		async (search = "") => {
 			const data = await apiFetch("/provinces", {
@@ -45,7 +50,7 @@ export default function App() {
 			});
 			setProvinces(Array.isArray(data) ? data : []);
 		},
-		[apiFetch]
+		[apiFetch],
 	);
 
 	const fetchDistricts = useCallback(
@@ -62,7 +67,7 @@ export default function App() {
 			});
 			setDistricts(Array.isArray(data) ? data : []);
 		},
-		[apiFetch, selectedProvince]
+		[apiFetch, selectedProvince],
 	);
 
 	const fetchClinicsSearch = useCallback(
@@ -94,7 +99,7 @@ export default function App() {
 				}
 			}
 		},
-		[apiFetch, selectedProvince, selectedDistrict, selectedSpecialtyIds]
+		[apiFetch, selectedProvince, selectedDistrict, selectedSpecialtyIds],
 	);
 
 	const fetchClinicsRefer = useCallback(
@@ -113,7 +118,7 @@ export default function App() {
 			setTotal(data.total || 0);
 			setPage(data.page || page);
 		},
-		[apiFetch, selectedProvince, selectedDistrict, selectedSpecialtyIds]
+		[apiFetch, selectedProvince, selectedDistrict, selectedSpecialtyIds],
 	);
 
 	const handleClinicsRefer = async (page) => {
@@ -151,7 +156,7 @@ export default function App() {
 			const normRegion = normalizeText(regionName);
 
 			const found = provinces.find((p) =>
-				normalizeText(p.name).includes(normRegion)
+				normalizeText(p.name).includes(normRegion),
 			);
 
 			if (found) {
@@ -236,16 +241,26 @@ export default function App() {
 		}
 	};
 
-	const handleClickCopy = (clinicName) => {
-		// TODO update handle for copy clinic infor
-		message.success(`Đã copy đường dẫn tới phòng khám: ${clinicName}`);
+	const handleOpenLink = (link) => {
+		if (typeof link !== "string") return;
+
+		const trimmed = link.trim();
+		if (!trimmed) return;
+
+		const url = /^https?:\/\//i.test(trimmed)
+			? trimmed
+			: `https://${trimmed}`;
+
+		window.open(url, "_blank", "noopener,noreferrer");
 	};
 
 	const handleDetailClinic = (clinicId) => {
-		// TODO update handle for detail clinic
-		message.success(
-			`Mở trong tab mới tới chi tiết phòng khám có ID: ${clinicId}`
+		const clinic = clinicsRefer.find(
+			(c) => String(c.id) === String(clinicId),
 		);
+		// TODO call getClinicCard API
+		setSelectedClinic(clinic);
+		setOpenModel(true);
 	};
 
 	const fetchSpecialties = useCallback(async () => {
@@ -253,7 +268,7 @@ export default function App() {
 			method: "GET",
 		});
 		setSpecialties(
-			Array.isArray(data?.specialties) ? data.specialties : []
+			Array.isArray(data?.specialties) ? data.specialties : [],
 		);
 	}, [apiFetch]);
 
@@ -274,7 +289,7 @@ export default function App() {
 
 	const handleSpecialtyChange = (id) => {
 		setSelectedSpecialtyIds((prev) =>
-			prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+			prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id],
 		);
 	};
 
@@ -320,16 +335,22 @@ export default function App() {
 						Tham khảo các địa chỉ khác:
 					</Title>
 					<Row gutter={[16, 16]}>
-						{clinicsRefer.map((clinic, index) => (
-							<Col key={index} xs={24} sm={12} md={12} lg={6}>
-								<ClinicCard
-									clinic={clinic}
-									loading={loadingRefer}
-									onCopy={handleClickCopy}
-									onViewDetail={handleDetailClinic}
-								/>
-							</Col>
-						))}
+						{clinicsRefer.map((clinic, index) => {
+							return (
+								<Col key={index} xs={24} sm={12} md={12} lg={6}>
+									<ClinicCard
+										clinic={clinic}
+										loading={loadingRefer}
+										onOpenLink={
+											clinic.website
+												? handleOpenLink
+												: null
+										}
+										onViewDetail={handleDetailClinic}
+									/>
+								</Col>
+							);
+						})}
 					</Row>
 					<Pagination
 						style={{ marginTop: 20 }}
@@ -341,6 +362,22 @@ export default function App() {
 					/>
 				</div>
 			) : null}
+
+			<EditClinicModal
+				open={openModel}
+				clinic={selectedClinic}
+				onCancel={() => {
+					setOpenModel(false);
+					setSelectedClinic(null);
+				}}
+				title=""
+				centered
+				showFooter={false}
+				showCloseIcon={true}
+				renderForm={() => (
+					<ClinicContactContent clinic={selectedClinic} />
+				)}
+			/>
 		</div>
 	);
 }
