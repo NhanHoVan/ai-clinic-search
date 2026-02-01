@@ -71,6 +71,7 @@ export default function ClinicCard({
 					alt={clinic.name}
 					src={clinic.image}
 					fallback={IMAGE_FALLBACK}
+					preview={false}
 				/>
 			}
 			actions={actions.length > 0 ? actions : undefined}

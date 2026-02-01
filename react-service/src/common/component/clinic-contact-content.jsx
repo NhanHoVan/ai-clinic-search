@@ -45,7 +45,7 @@ export default function ClinicContactContent({ clinic }) {
 						src={image}
 						fallback={IMAGE_FALLBACK}
 						alt={name}
-						preview={false}
+						preview={true}
 						style={{
 							width: "100%",
 							height: "100%",
