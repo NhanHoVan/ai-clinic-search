@@ -52,3 +52,29 @@ export const getStatusIcon = (status) => {
 export const getStatusTooltip = (status) => {
 	return ClinicStatusMap[status]?.tooltip || ClinicStatusMap.DEFAULT.tooltip;
 };
+
+export const extractLatLngFromGoogleMapUrl = (url) => {
+	if (!url) return null;
+
+	try {
+		const qMatch = url.match(/[?&]q=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+		if (qMatch) {
+			return {
+				lat: parseFloat(qMatch[1]),
+				lng: parseFloat(qMatch[2]),
+			};
+		}
+
+		const atMatch = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+		if (atMatch) {
+			return {
+				lat: parseFloat(atMatch[1]),
+				lng: parseFloat(atMatch[2]),
+			};
+		}
+
+		return null;
+	} catch {
+		return null;
+	}
+};
