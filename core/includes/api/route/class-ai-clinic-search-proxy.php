@@ -623,7 +623,7 @@ class Ai_Clinic_Proxy_Controller
             : 'OTHER';
 
         $suggested_fields = $body_request;
-        unset($suggested_fields['id'], $suggested_fields['verifier']);
+        unset($suggested_fields['id'], $suggested_fields['verifier'], $suggested_fields['google_map_url']);
 
         $body = [
             'suggestion_type'  => 'EDIT',
@@ -681,7 +681,7 @@ class Ai_Clinic_Proxy_Controller
             : 'OTHER';
 
         $suggested_fields = $body_request;
-        unset($suggested_fields['verifier']);
+        unset($suggested_fields['verifier'], $suggested_fields['google_map_url']);
 
         $body = [
             'suggestion_type'  => 'CREATE',
