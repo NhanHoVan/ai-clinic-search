@@ -551,6 +551,20 @@ class Ai_Clinic_Controller_Clinic
                         )));
                     }
                     break;
+
+                case 'lat':
+                    $lat = filter_var($value, FILTER_VALIDATE_FLOAT);
+                    if ($lat !== false && $lat >= -90 && $lat <= 90) {
+                        $sanitized[$key] = (float) $lat;
+                    }
+                    break;
+
+                case 'lng':
+                    $lng = filter_var($value, FILTER_VALIDATE_FLOAT);
+                    if ($lng !== false && $lng >= -180 && $lng <= 180) {
+                        $sanitized[$key] = (float) $lng;
+                    }
+                    break;
             }
         }
         return $sanitized;
@@ -568,6 +582,8 @@ class Ai_Clinic_Controller_Clinic
         'description',
         'image',
         'specialties',
+        'lat',
+        'lng',
     ];
 
     /**

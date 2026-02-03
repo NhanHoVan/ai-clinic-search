@@ -282,6 +282,8 @@ class Ai_Clinic_Service_Clinic
                 'address'     => $clinic['address'] ?? '',
                 'province'    => $clinic['province'] ?? '',
                 'district'    => $clinic['district'] ?? '',
+                'lat'         => $clinic['lat'] ?? '',
+                'lng'         => $clinic['lng'] ?? '',
                 'phone'       => $this->maskPhone($clinic['phone'] ?? ''),
                 'email'       => $this->maskEmail($clinic['email'] ?? ''),
                 'website'     => $clinic['website'] ?? '',
