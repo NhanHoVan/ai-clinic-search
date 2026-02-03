@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Form, Input, Select, message } from "antd";
+import { Form, Input, Select, message, Row, Col, Space, Divider } from "antd";
 import { useWordPress } from "@/hooks/use-wordpress";
+import { extractLatLngFromGoogleMapUrl } from "@/utils/utils";
 
 const { TextArea } = Input;
 
@@ -55,6 +56,23 @@ export default function EditClinicAdminForm({
 			})),
 		[specialties],
 	);
+
+	const handleGoogleMapChange = (e) => {
+		const value = e.target.value;
+		if (!value) return;
+
+		const latLng = extractLatLngFromGoogleMapUrl(value);
+
+		if (!latLng) {
+			message.warning("Link Google Map không hợp lệ");
+			return;
+		}
+
+		form.setFieldsValue({
+			lat: latLng.lat,
+			lng: latLng.lng,
+		});
+	};
 
 	return (
 		<Form
@@ -166,6 +184,52 @@ export default function EditClinicAdminForm({
 				<Input />
 			</Form.Item>
 
+			<Form.Item label="Ảnh hiển thị (URL)" name="image">
+				<Input />
+			</Form.Item>
+
+			<Form.Item
+				label="Google Map URL"
+				name="google_map_url"
+				validateTrigger="onBlur"
+				rules={[
+					{
+						validator: (_, value) => {
+							if (!value) return Promise.resolve();
+
+							return extractLatLngFromGoogleMapUrl(value)
+								? Promise.resolve()
+								: Promise.reject(
+										new Error(
+											"Link Google Map không hợp lệ",
+										),
+									);
+						},
+					},
+				]}
+			>
+				<Space direction="vertical" className="space-input-form">
+					<Input
+						placeholder="Dán link Google Map tại đây"
+						onBlur={handleGoogleMapChange}
+					/>
+
+					<Row gutter={16}>
+						<Col span={12}>
+							<Form.Item name="lat" noStyle>
+								<Input placeholder="lat" disabled />
+							</Form.Item>
+						</Col>
+
+						<Col span={12}>
+							<Form.Item name="lng" noStyle>
+								<Input placeholder="lng" disabled />
+							</Form.Item>
+						</Col>
+					</Row>
+				</Space>
+			</Form.Item>
+
 			<Form.Item
 				label="Mô tả"
 				name="description"
@@ -173,6 +237,8 @@ export default function EditClinicAdminForm({
 			>
 				<TextArea rows={3} maxLength={500} showCount />
 			</Form.Item>
+
+			<Divider size="small" style={{ marginBottom: 15, marginTop: 25 }} />
 
 			<Form.Item
 				label="Trạng thái xác thực"
@@ -208,6 +274,7 @@ export default function EditClinicAdminForm({
 						message: "Vui lòng chọn trạng thái hiển thị",
 					},
 				]}
+				style={{ marginBottom: 40 }}
 			>
 				<Select
 					options={[
@@ -215,10 +282,6 @@ export default function EditClinicAdminForm({
 						{ label: "Ẩn", value: "HIDDEN" },
 					]}
 				/>
-			</Form.Item>
-
-			<Form.Item label="Ảnh đại diện (URL)" name="image">
-				<Input />
 			</Form.Item>
 		</Form>
 	);

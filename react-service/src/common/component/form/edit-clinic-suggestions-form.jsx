@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Form, Input, Radio, Select, message } from "antd";
+import { Form, Input, Radio, Select, message, Row, Col, Space } from "antd";
 import { useWordPress } from "@/hooks/use-wordpress";
+import { extractLatLngFromGoogleMapUrl } from "@/utils/utils";
 
 const { TextArea } = Input;
 
@@ -55,6 +56,23 @@ export default function EditClinicForm({
 			})),
 		[specialties],
 	);
+
+	const handleGoogleMapChange = (e) => {
+		const value = e.target.value;
+		if (!value) return;
+
+		const latLng = extractLatLngFromGoogleMapUrl(value);
+
+		if (!latLng) {
+			message.warning("Link Google Map không hợp lệ");
+			return;
+		}
+
+		form.setFieldsValue({
+			lat: latLng.lat,
+			lng: latLng.lng,
+		});
+	};
 
 	return (
 		<Form
@@ -166,16 +184,58 @@ export default function EditClinicForm({
 				<Input />
 			</Form.Item>
 
+			<Form.Item label="Ảnh hiển thị (URL)" name="image">
+				<Input />
+			</Form.Item>
+
+			<Form.Item
+				label="Google Map URL"
+				name="google_map_url"
+				validateTrigger="onBlur"
+				rules={[
+					{
+						validator: (_, value) => {
+							if (!value) return Promise.resolve();
+
+							return extractLatLngFromGoogleMapUrl(value)
+								? Promise.resolve()
+								: Promise.reject(
+										new Error(
+											"Link Google Map không hợp lệ",
+										),
+									);
+						},
+					},
+				]}
+			>
+				<Space direction="vertical" className="space-input-form">
+					<Input
+						placeholder="Dán link Google Map tại đây"
+						onBlur={handleGoogleMapChange}
+					/>
+
+					<Row gutter={16}>
+						<Col span={12}>
+							<Form.Item name="lat" noStyle>
+								<Input placeholder="lat" disabled />
+							</Form.Item>
+						</Col>
+
+						<Col span={12}>
+							<Form.Item name="lng" noStyle>
+								<Input placeholder="lng" disabled />
+							</Form.Item>
+						</Col>
+					</Row>
+				</Space>
+			</Form.Item>
+
 			<Form.Item
 				label="Mô tả"
 				name="description"
 				rules={[{ max: 500, message: "Tối đa 500 ký tự" }]}
 			>
 				<TextArea rows={3} maxLength={500} showCount />
-			</Form.Item>
-
-			<Form.Item label="Ảnh đại diện (URL)" name="image">
-				<Input />
 			</Form.Item>
 
 			<Form.Item
