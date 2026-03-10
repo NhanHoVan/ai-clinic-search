@@ -13,13 +13,16 @@ export default function ClinicContactContent({ clinic }) {
 	const { name, phone, email, lat, lng, image, address, description } =
 		clinic;
 
+	const latNum = parseFloat(lat);
+	const lngNum = parseFloat(lng);
+
 	const hasMap =
-		Number.isFinite(Number(lat)) &&
-		Number.isFinite(Number(lng)) &&
-		lat >= -90 &&
-		lat <= 90 &&
-		lng >= -180 &&
-		lng <= 180;
+		!Number.isNaN(latNum) &&
+		!Number.isNaN(lngNum) &&
+		latNum >= -90 &&
+		latNum <= 90 &&
+		lngNum >= -180 &&
+		lngNum <= 180;
 
 	return (
 		<Row gutter={24}>
