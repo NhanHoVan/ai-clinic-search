@@ -15,16 +15,13 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.ref }}
 
       - name: Install GitHub CLI
         run: sudo apt-get install -y gh
 
-      - name: Auto assign PR author (if not already assigned)
+      - name: Auto assign PR author
         env:
-          GH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
           AUTHOR=${{ github.event.pull_request.user.login }}
